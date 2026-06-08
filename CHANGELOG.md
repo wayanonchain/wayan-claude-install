@@ -16,6 +16,13 @@ This project adheres to [Semantic Versioning](https://semver.org/).
     `VOICE_OUTPUT` (TTS not implemented yet), `GROQ_MODEL`, `VOICE_TIMEOUT`.
   - Unit tests in `tests/test_gateway.py` (network faked).
 
+### Fixed
+- **Groq HTTP 400 on voice notes.** Telegram delivers voice as `.oga`, which
+  Groq's allow-list rejects (`ogg`/`opus` are accepted, `oga` is not). The
+  upload filename is now normalized to `voice.ogg` with an explicit
+  `audio/ogg` content type; bytes stay OGG/Opus (no ffmpeg). Accepted
+  extensions (e.g. `.mp3`) are preserved. Covered by new tests.
+
 ## [1.0.1] - 2026-06-08
 
 Post-deployment patch release.

@@ -21,6 +21,7 @@ from gateway import app as appmod                       # noqa: E402
 from gateway.app import Gateway                         # noqa: E402
 from gateway.config import load_config                  # noqa: E402
 from gateway.telegram_api import split_message          # noqa: E402
+from gateway import transcribe as transcribe_mod          # noqa: E402
 from gateway.transcribe import transcribe, TranscriptionError  # noqa: E402
 
 
@@ -92,6 +93,53 @@ class TranscribeTests(unittest.TestCase):
     def test_empty_audio(self):
         with self.assertRaises(TranscriptionError):
             transcribe(b"", "a.ogg", make_cfg(groq_api_key="k"))
+
+
+class GroqUploadFilenameTests(unittest.TestCase):
+    """The Groq 400 bug: Telegram '.oga' must be sent to Groq as '.ogg'."""
+
+    class _FakeResp:
+        status_code = 200
+        text = "ok"
+
+        def json(self):
+            return {"text": "hi"}
+
+    def _capture_post(self, input_filename):
+        captured = {}
+
+        def fake_post(url, headers=None, files=None, data=None, timeout=None):
+            captured["files"] = files
+            captured["data"] = data
+            return self._FakeResp()
+
+        orig = transcribe_mod.requests.post
+        transcribe_mod.requests.post = fake_post
+        try:
+            out = transcribe(b"AUDIO-BYTES", input_filename, make_cfg(groq_api_key="k"))
+        finally:
+            transcribe_mod.requests.post = orig
+        return out, captured
+
+    def test_oga_becomes_ogg(self):
+        out, captured = self._capture_post("file_123.oga")
+        self.assertEqual(out, "hi")
+        name, _bytes, content_type = captured["files"]["file"]
+        self.assertTrue(name.endswith(".ogg"), name)
+        self.assertEqual(content_type, "audio/ogg")
+        self.assertEqual(captured["data"]["model"], make_cfg(groq_api_key="k").groq_model)
+
+    def test_no_extension_becomes_ogg(self):
+        _out, captured = self._capture_post("file_456")
+        name, _bytes, content_type = captured["files"]["file"]
+        self.assertEqual(name, "voice.ogg")
+        self.assertEqual(content_type, "audio/ogg")
+
+    def test_accepted_extension_preserved(self):
+        _out, captured = self._capture_post("note.mp3")
+        name, _bytes, content_type = captured["files"]["file"]
+        self.assertEqual(name, "note.mp3")
+        self.assertEqual(content_type, "audio/mpeg")
 
 
 class VoiceRoutingTests(unittest.TestCase):
