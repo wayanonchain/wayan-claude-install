@@ -1,0 +1,42 @@
+# Changelog
+
+All notable changes to this project are documented here.
+This project adheres to [Semantic Versioning](https://semver.org/).
+
+## [1.0.1] - 2026-06-08
+
+Post-deployment patch release.
+
+### Fixed
+- **systemd namespace failure (root cause).** Both gateway units declare
+  `ReadWritePaths` for `/home/wayan/.config`, `/home/wayan/.claude`, and
+  `/home/wayan/.cache`. systemd sets up the service's mount namespace *before*
+  `ExecStart`, and if any `ReadWritePaths` target does not exist it aborts
+  namespace setup — so the services failed to start on a fresh host where
+  `~/.config` had not yet been created.
+- `install.sh` now creates `~/.config`, `~/.cache`, and `~/.claude`
+  (mode `0700`, owned by `wayan`) in `create_dirs`.
+- `install.sh` adds `verify_service_dirs()`, run **before** the units are
+  installed, which aborts the install if any required directory is missing.
+- Both units add `ExecStartPre=/usr/bin/test -d …` guards for `~/.config` and
+  `~/.claude` — a readable start-time check (the install-time creation +
+  verification are what actually prevent the namespace failure).
+- `scripts/healthcheck.sh` and `tests/verify.sh` now assert the home
+  directories exist.
+
+## [1.0.0] - 2026-06-08
+
+Initial deployable release (EdgeLab Day 1 methodology).
+
+### Added
+- Two independent Claude Code agents: **Jupiter** (main daily) and **Uran**
+  (backup / root-fix), each with its own Telegram bot, workspace, env file,
+  and systemd service.
+- Python **Telegram Gateway** (long polling) bridging Telegram ⇄ Claude Code
+  headless mode (`claude -p`): message loop, graceful SIGTERM/SIGINT shutdown,
+  journald logging, per-chat allowlist, 4096-char message splitting.
+- Idempotent `install.sh`: base packages, Node.js 22, Claude Code (per user),
+  `wayan` user, per-agent Python venv + dependency install, gateway deploy,
+  systemd services, scoped sudoers, and a Claude login gate.
+- Lifecycle scripts: `cleanup.sh`, `update.sh`, `uninstall.sh`,
+  `healthcheck.sh`; plus `tests/verify.sh`.
