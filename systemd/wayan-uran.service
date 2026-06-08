@@ -1,0 +1,25 @@
+[Unit]
+Description=Wayan Uran — backup / root-fix Claude Code agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=wayan
+Group=wayan
+WorkingDirectory=/home/wayan/.claude-lab/uran
+EnvironmentFile=/etc/wayan-uran.env
+# Placeholder runner. Replace ExecStart with the real Uran entrypoint once the
+# agent code lands. Uran is the independent second channel that repairs Jupiter.
+ExecStart=/bin/bash -lc 'echo "[uran] env loaded; replace ExecStart with the real entrypoint"; exec sleep infinity'
+Restart=on-failure
+RestartSec=5
+# Hardening (slightly looser than Jupiter: Uran needs to inspect/repair)
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/home/wayan/.claude-lab /opt/wayan-uran
+
+[Install]
+WantedBy=multi-user.target

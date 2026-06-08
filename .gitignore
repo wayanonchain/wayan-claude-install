@@ -1,0 +1,4 @@
+# Local secrets / scratch — never commit
+*.env
+*.local
+.DS_Store

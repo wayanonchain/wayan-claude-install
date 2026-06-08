@@ -1,0 +1,25 @@
+[Unit]
+Description=Wayan Jupiter — main Claude Code agent (Telegram gateway)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=wayan
+Group=wayan
+WorkingDirectory=/home/wayan/.claude-lab/jupiter
+EnvironmentFile=/etc/wayan-jupiter.env
+# Placeholder runner. Replace ExecStart with the real Jupiter entrypoint
+# (e.g. the Telegram gateway / claude launcher) once the agent code lands.
+ExecStart=/bin/bash -lc 'echo "[jupiter] env loaded; replace ExecStart with the real entrypoint"; exec sleep infinity'
+Restart=on-failure
+RestartSec=5
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/home/wayan/.claude-lab /opt/wayan-jupiter
+
+[Install]
+WantedBy=multi-user.target
