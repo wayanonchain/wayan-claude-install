@@ -6,6 +6,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased] — v1.1.0-alpha
 
 ### Added
+- **Skill chaining.** The `## Skills Usage` section now tells agents to chain
+  multiple skills for cross-domain tasks (read all relevant `SKILL.md` first,
+  apply in order) — e.g. an uploaded token report + "make an X post" routes
+  file-analyst → onchain-alpha → content-engine instead of stopping at one.
 - **Automatic skills selection.** The agent templates now include a
   `## Skills Usage` section that classifies the task and routes it to the right
   `SKILL.md` before answering. New `scripts/apply-templates.sh` pushes updated

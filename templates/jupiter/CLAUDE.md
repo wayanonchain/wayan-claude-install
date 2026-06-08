@@ -35,6 +35,12 @@ If the task matches a skill, read the relevant file first:
 - suspicious links/contracts/env/permissions/security → skills/security-check/SKILL.md
 - improving agent behavior/skills/reviews → skills/agent-reviewer/SKILL.md
 
+Tasks often match more than one skill — **chain them**. If a task spans several
+domains, read ALL the relevant SKILL.md files first, then apply them in logical
+order; do not stop at the first match. Example: "analyze an uploaded token
+report and make an X post" → file-analyst (read/extract the file) →
+onchain-alpha (assess the token) → content-engine (write the post).
+
 Rules:
 - Use skills as operational playbooks.
 - Do not modify SKILL.md directly.
