@@ -239,7 +239,32 @@ class FileHandlingTests(unittest.TestCase):
     def test_no_caption_uses_default_task(self):
         gw = make_gateway(self.cfg)
         prompt = gw._handle_file(1, {"file_id": "f", "file_name": "data.csv"}, "")
-        self.assertIn("Изучи его", prompt)
+        self.assertIn("Analyze the uploaded file", prompt)
+
+    def test_prompt_has_explicit_read_instruction(self):
+        gw = make_gateway(self.cfg)
+        prompt = gw._handle_file(
+            1, {"file_id": "f", "file_name": "report.pdf"}, "Summarize this document")
+        # Deterministic read-then-act contract
+        self.assertIn("Task:", prompt)
+        self.assertIn("Summarize this document", prompt)
+        self.assertIn("You MUST first read and inspect the file located at:", prompt)
+        self.assertIn("Only after reading the file, complete the requested task.", prompt)
+        self.assertIn("If the file cannot be read, explain why.", prompt)
+        # absolute path present
+        uploads = os.path.join(self.ws, "uploads")
+        self.assertTrue(any(uploads in line and line.endswith(".pdf")
+                            for line in prompt.splitlines()))
+
+    def test_file_prompt_helper_is_pure(self):
+        # Backward-compatible helper usable for documents, images, future types.
+        p = Gateway._file_prompt("do X", "/abs/path/img.png")
+        self.assertIn("Task:\n\ndo X", p)
+        self.assertIn("/abs/path/img.png", p)
+        self.assertIn("You MUST first read and inspect the file located at:", p)
+        # default task applies when empty
+        self.assertIn("Analyze the uploaded file",
+                      Gateway._file_prompt("", "/abs/x.bin"))
 
     def test_files_disabled(self):
         gw = make_gateway(replace(self.cfg, files_enabled=False))

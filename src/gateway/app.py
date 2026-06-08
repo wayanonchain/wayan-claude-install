@@ -21,6 +21,20 @@ from .transcribe import TranscriptionError, transcribe
 
 log = logging.getLogger("app")
 
+# Deterministic file-analysis prompt: Claude is explicitly instructed to read the
+# file before acting, instead of relying on it deciding to. Works for any file
+# type (documents, images, and future kinds) since it only references a path.
+FILE_PROMPT_TEMPLATE = (
+    "Task:\n\n"
+    "{task}\n\n"
+    "You MUST first read and inspect the file located at:\n\n"
+    "{path}\n\n"
+    "Only after reading the file, complete the requested task.\n\n"
+    "If the file cannot be read, explain why."
+)
+# Default task when the user sends a file without a caption.
+DEFAULT_FILE_TASK = "Analyze the uploaded file and describe its contents."
+
 
 class Gateway:
     def __init__(self, cfg: Config) -> None:
@@ -96,6 +110,12 @@ class Gateway:
         }
 
     @staticmethod
+    def _file_prompt(task: str, abs_path: str) -> str:
+        """Build the deterministic 'read-then-act' prompt for an uploaded file."""
+        return FILE_PROMPT_TEMPLATE.format(
+            task=(task or DEFAULT_FILE_TASK).strip(), path=abs_path)
+
+    @staticmethod
     def _safe_filename(name: str) -> str:
         """basename only, restricted charset, with a timestamp prefix for uniqueness."""
         base = os.path.basename(name or "").strip() or "upload.bin"
@@ -141,8 +161,7 @@ class Gateway:
         log.info("saved upload from chat_id=%s -> %s (%d bytes)", chat_id, dest, len(data))
 
         self.tg.send_message(chat_id, f"📎 Файл получен: {safe}")
-        task = caption or "Пользователь прислал файл. Изучи его и помоги по нему."
-        return f"{task}\n\nФайл сохранён локально: {dest}"
+        return self._file_prompt(caption, os.path.abspath(dest))
 
     def _handle_message(self, msg: dict[str, Any]) -> None:
         chat_id = msg.get("chat", {}).get("id")

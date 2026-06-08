@@ -6,4 +6,4 @@ Claude Code running in headless mode (`claude -p`). One process per agent
 same code runs both agents with separate configuration.
 """
 
-__version__ = "1.1.0a3"
+__version__ = "1.1.0a4"

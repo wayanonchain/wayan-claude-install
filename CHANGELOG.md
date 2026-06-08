@@ -13,6 +13,13 @@ This project adheres to [Semantic Versioning](https://semver.org/).
   - New env keys: `FILES_ENABLED` (default `true`), `FILE_MAX_MB` (default `20`).
   - New `reply sent to chat_id=… (N chars)` log line for delivery visibility.
   - Unit tests for download, prompt building, photo selection, limits, routing.
+
+### Changed
+- **Deterministic file-analysis prompt.** Uploaded files now produce an explicit
+  read-then-act instruction (`You MUST first read and inspect the file located
+  at: <abs path>` … `If the file cannot be read, explain why.`) instead of
+  relying on Claude to open the path on its own. The `caption` is still the task;
+  an absolute path is used; works for documents, images, and future file types.
 - **Voice input (Groq).** Both agents transcribe Telegram voice notes via Groq
   Whisper and feed the transcript into the existing `claude -p` flow:
   `getFile` → download OGG/Opus → Groq transcription → echo 📝 → Claude → text reply.
