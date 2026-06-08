@@ -36,6 +36,11 @@ else
   bad "claude NOT logged in for ${WAYAN_USER} (run: sudo -u ${WAYAN_USER} -i ; claude)"
 fi
 
+hdr "Service-required home dirs"
+for d in "/home/${WAYAN_USER}/.config" "/home/${WAYAN_USER}/.cache" "/home/${WAYAN_USER}/.claude"; do
+  [[ -d "${d}" ]] && ok "present: ${d}" || bad "missing: ${d} (services will fail to start)"
+done
+
 hdr "Gateway deployment"
 for opt in /opt/wayan-jupiter /opt/wayan-uran; do
   [[ -x "${opt}/venv/bin/python" ]] && ok "venv: ${opt}/venv" || bad "missing venv: ${opt}/venv"

@@ -24,6 +24,9 @@ check_cmd python3
 check_cmd git
 check_cmd jq
 
+check_exists /home/wayan/.config
+check_exists /home/wayan/.cache
+check_exists /home/wayan/.claude
 check_exists /home/wayan/.claude-lab/jupiter/CLAUDE.md
 check_exists /home/wayan/.claude-lab/jupiter/USER.md
 check_exists /home/wayan/.claude-lab/uran/CLAUDE.md

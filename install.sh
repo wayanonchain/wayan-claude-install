@@ -181,7 +181,14 @@ create_dirs() {
   install -d -m 0750 -o "${WAYAN_USER}" -g "${WAYAN_USER}" "${URAN_WS}"
   install -d -m 0755 -o "${WAYAN_USER}" -g "${WAYAN_USER}" "${JUPITER_OPT}"
   install -d -m 0755 -o "${WAYAN_USER}" -g "${WAYAN_USER}" "${URAN_OPT}"
+  # Home dirs referenced by the services' ReadWritePaths MUST exist before the
+  # units can start, or systemd fails namespace setup. Claude also writes its
+  # auth/state/cache here once 'wayan' logs in.
+  install -d -m 0700 -o "${WAYAN_USER}" -g "${WAYAN_USER}" "${WAYAN_HOME}/.config"
+  install -d -m 0700 -o "${WAYAN_USER}" -g "${WAYAN_USER}" "${WAYAN_HOME}/.cache"
+  install -d -m 0700 -o "${WAYAN_USER}" -g "${WAYAN_USER}" "${WAYAN_HOME}/.claude"
   ok "Workspaces ready: ${JUPITER_WS}, ${URAN_WS}"
+  ok "Home dirs ready: ${WAYAN_HOME}/.config, ${WAYAN_HOME}/.cache, ${WAYAN_HOME}/.claude"
 }
 
 # ----------------------------------------------------------------------------
@@ -262,7 +269,26 @@ create_env_files() {
 }
 
 # ----------------------------------------------------------------------------
-# 10. systemd services
+# 10. Verify service-required directories exist BEFORE the units are installed
+#     (systemd ReadWritePaths fails namespace setup if any are missing).
+# ----------------------------------------------------------------------------
+verify_service_dirs() {
+  log "Verifying directories required by the services ..."
+  local missing=0 d
+  for d in "${WAYAN_HOME}/.config" "${WAYAN_HOME}/.cache" "${WAYAN_HOME}/.claude" \
+           "${LAB_DIR}" "${JUPITER_OPT}" "${URAN_OPT}"; do
+    if [[ -d "${d}" ]]; then
+      ok "present: ${d}"
+    else
+      err "missing: ${d}"
+      missing=1
+    fi
+  done
+  [[ "${missing}" -eq 0 ]] || die "required directories missing; aborting before services are installed."
+}
+
+# ----------------------------------------------------------------------------
+# 11. systemd services
 # ----------------------------------------------------------------------------
 install_services() {
   log "Installing systemd services ..."
@@ -424,6 +450,7 @@ main() {
   copy_templates
   create_env_files
   deploy_gateway
+  verify_service_dirs
   install_services
   install_sudoers
   check_claude_login

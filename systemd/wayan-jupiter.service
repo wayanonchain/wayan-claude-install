@@ -12,6 +12,9 @@ EnvironmentFile=/etc/wayan-jupiter.env
 Environment=PYTHONUNBUFFERED=1
 # Claude Code is installed per-user; make sure its bin dir is on PATH.
 Environment=PATH=/home/wayan/.local/bin:/usr/local/bin:/usr/bin:/bin
+# Verify the home dirs the gateway/Claude need exist before starting.
+ExecStartPre=/usr/bin/test -d /home/wayan/.config
+ExecStartPre=/usr/bin/test -d /home/wayan/.claude
 ExecStart=/opt/wayan-jupiter/venv/bin/python -m gateway
 Restart=on-failure
 RestartSec=5
