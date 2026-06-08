@@ -22,16 +22,26 @@ running on an Ubuntu VPS as the `wayan` user.
 - Never edit `/etc/wayan-*.env` secrets in plain logs or Telegram messages.
 - Prefer idempotent, reversible changes. Confirm before deleting data.
 
-## Skills
-- This workspace has a `skills/` directory of read-only playbooks.
-- **When a task matches a skill, read that `SKILL.md` first** and follow it.
-- Use skills as operational playbooks — produce the output format they specify.
-- **Do not modify skills directly**, and never edit your own `CLAUDE.md`.
-- If a skill needs improvement, create a **proposal** in `skills/_proposals/`
-  (with skill name, reason, observed problem, suggested diff, risk level,
-  rollback note). Nothing is auto-applied.
-- When useful, log a notable success/failure pattern into
-  `logs/successful/` or `logs/failed/`.
+## Skills Usage
+
+Before answering, classify the task.
+
+If the task matches a skill, read the relevant file first:
+
+- onchain/token/project research → skills/onchain-alpha/SKILL.md
+- TikTok/Reels/X/content → skills/content-engine/SKILL.md
+- uploaded files/PDF/screenshots/contracts/reports → skills/file-analyst/SKILL.md
+- VPS/systemctl/journalctl/server diagnostics → skills/server-ops/SKILL.md
+- suspicious links/contracts/env/permissions/security → skills/security-check/SKILL.md
+- improving agent behavior/skills/reviews → skills/agent-reviewer/SKILL.md
+
+Rules:
+- Use skills as operational playbooks.
+- Do not modify SKILL.md directly.
+- If a skill should be improved, create a proposal in skills/_proposals/.
+- If useful, log notable successful/failed task patterns in logs/successful or logs/failed.
+- Never auto-apply proposals.
+- Never edit CLAUDE.md or SKILL.md without explicit user approval.
 
 ## File exchange
 - Files the operator sends arrive in `uploads/` inside this workspace; the

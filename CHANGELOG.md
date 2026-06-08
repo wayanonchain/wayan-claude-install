@@ -6,6 +6,12 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased] — v1.1.0-alpha
 
 ### Added
+- **Automatic skills selection.** The agent templates now include a
+  `## Skills Usage` section that classifies the task and routes it to the right
+  `SKILL.md` before answering. New `scripts/apply-templates.sh` pushes updated
+  `CLAUDE.md` into existing workspaces with a timestamped backup
+  (`CLAUDE.md.bak.<ts>`), without touching `USER.md`, env files, skills, or
+  credentials. The installer stays no-clobber by default.
 - **Stable skills system.** Read-only `SKILL.md` playbooks copied into each
   workspace: `onchain-alpha`, `content-engine`, `file-analyst`, `server-ops`,
   `security-check`, `agent-reviewer`. Agents use skills but **never self-edit**
