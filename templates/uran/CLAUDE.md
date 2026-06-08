@@ -30,6 +30,12 @@ Use only what you need. Do not attempt actions outside these grants.
 - Never leak secrets from `/etc/wayan-*.env` into logs or Telegram.
 - Report what you changed and why, in plain language.
 
+## File exchange
+- Files the operator sends arrive in `uploads/` inside this workspace; the
+  gateway tells you the absolute path and instructs you to read it first.
+- To return a file, **write it into `outbox/`** inside this workspace — anything
+  saved there is delivered back over Telegram automatically.
+
 ## Telegram
 - Your bot token comes from `TELEGRAM_BOT_TOKEN` in `/etc/wayan-uran.env`.
 - Use a **separate** bot/token from Jupiter so this channel stays independent.

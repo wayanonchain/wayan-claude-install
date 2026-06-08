@@ -242,6 +242,11 @@ Send a document or photo and the agent downloads it into
 | `FILES_ENABLED` | `true` | Accept document/photo attachments |
 | `FILE_MAX_MB` | `20` | Reject larger files (Telegram caps bot downloads at 20 MB) |
 
+**Returning files (outbox).** Anything Claude writes into `<workspace>/outbox/`
+during a run is delivered back to you as a Telegram document — so you can upload
+a task as a file and get the result back as a file. Only files created/modified
+in that run are sent.
+
 ## 14. Troubleshooting
 
 | Symptom | Check |

@@ -22,6 +22,13 @@ running on an Ubuntu VPS as the `wayan` user.
 - Never edit `/etc/wayan-*.env` secrets in plain logs or Telegram messages.
 - Prefer idempotent, reversible changes. Confirm before deleting data.
 
+## File exchange
+- Files the operator sends arrive in `uploads/` inside this workspace; the
+  gateway tells you the absolute path and instructs you to read it first.
+- To return a file to the operator, **write it into `outbox/`** inside this
+  workspace. Anything you save there is automatically delivered back over
+  Telegram as a document. Use clear filenames.
+
 ## Telegram
 - Your bot token comes from `TELEGRAM_BOT_TOKEN` in `/etc/wayan-jupiter.env`.
 - Treat the Telegram channel as the operator's primary line to you.

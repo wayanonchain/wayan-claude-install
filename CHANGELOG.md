@@ -14,6 +14,16 @@ This project adheres to [Semantic Versioning](https://semver.org/).
   - New `reply sent to chat_id=… (N chars)` log line for delivery visibility.
   - Unit tests for download, prompt building, photo selection, limits, routing.
 
+### Added
+- **File output (outbox → Telegram).** Agents can now return files: anything
+  Claude writes into `<workspace>/outbox/` during a run is delivered back to the
+  user as a Telegram document. Enables file-in → file-out task flows. The outbox
+  is snapshotted before each run; only new/modified files are sent (no resends).
+  - `telegram_api.send_document`; outbox snapshot/deliver in `app.py`; the file
+    prompt now also tells Claude where to save deliverables.
+  - CLAUDE.md templates document the `uploads/` ↔ `outbox/` convention.
+  - Unit tests for delivery, no-resend, and text-task → file output.
+
 ### Changed
 - **Deterministic file-analysis prompt.** Uploaded files now produce an explicit
   read-then-act instruction (`You MUST first read and inspect the file located

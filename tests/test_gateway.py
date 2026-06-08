@@ -35,11 +35,16 @@ class FakeTelegram:
     def __init__(self):
         self.sent = []
         self.actions = []
+        self.docs = []
         self.file_info = {"file_path": "voice/file_123.oga"}
         self.audio = b"OGG-AUDIO-BYTES"
 
     def send_message(self, chat_id, text):
         self.sent.append((chat_id, text))
+
+    def send_document(self, chat_id, file_path, caption=None):
+        self.docs.append((chat_id, os.path.basename(file_path)))
+        return {"ok": True}
 
     def send_chat_action(self, chat_id, action="typing"):
         self.actions.append((chat_id, action))
@@ -265,6 +270,54 @@ class FileHandlingTests(unittest.TestCase):
         # default task applies when empty
         self.assertIn("Analyze the uploaded file",
                       Gateway._file_prompt("", "/abs/x.bin"))
+
+    def test_file_prompt_has_output_instruction(self):
+        gw = make_gateway(self.cfg)
+        prompt = gw._handle_file(1, {"file_id": "f", "file_name": "a.txt"}, "do")
+        self.assertIn("save them to this directory", prompt)
+        self.assertIn(os.path.join(self.ws, "outbox"), prompt)
+
+
+class OutboxDeliveryTests(unittest.TestCase):
+    def setUp(self):
+        self.ws = tempfile.mkdtemp(prefix="wayan-ws-")
+        self.outbox = os.path.join(self.ws, "outbox")
+        os.makedirs(self.outbox, exist_ok=True)
+        self.cfg = make_cfg(workspace=self.ws)
+        self._orig_run = appmod.run_claude
+
+    def tearDown(self):
+        appmod.run_claude = self._orig_run
+
+    def _write(self, name, content="x"):
+        with open(os.path.join(self.outbox, name), "w") as fh:
+            fh.write(content)
+
+    def test_new_file_delivered(self):
+        gw = make_gateway(self.cfg)
+        before = gw._outbox_snapshot(self.outbox)   # empty
+        self._write("result.csv")
+        gw._deliver_outbox(1, self.outbox, before)
+        self.assertEqual(gw.tg.docs, [(1, "result.csv")])
+
+    def test_unchanged_not_resent(self):
+        self._write("old.txt")
+        gw = make_gateway(self.cfg)
+        before = gw._outbox_snapshot(self.outbox)   # already contains old.txt
+        gw._deliver_outbox(1, self.outbox, before)
+        self.assertEqual(gw.tg.docs, [])
+
+    def test_text_task_produces_file(self):
+        def fake_run(text, cfg, continue_session):
+            with open(os.path.join(self.outbox, "report.md"), "w") as fh:
+                fh.write("# report")
+            return "готово"
+
+        appmod.run_claude = fake_run
+        gw = make_gateway(self.cfg)
+        gw._handle_message({"chat": {"id": 7}, "text": "сделай отчёт файлом"})
+        self.assertIn((7, "готово"), gw.tg.sent)
+        self.assertIn((7, "report.md"), gw.tg.docs)
 
     def test_files_disabled(self):
         gw = make_gateway(replace(self.cfg, files_enabled=False))

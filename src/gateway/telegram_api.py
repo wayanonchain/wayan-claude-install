@@ -6,6 +6,7 @@ sendChatAction, sendMessage (with 4096-char splitting).
 from __future__ import annotations
 
 import logging
+import os
 from typing import Any
 
 import requests
@@ -65,6 +66,22 @@ class TelegramClient:
             self._call("sendChatAction", {"chat_id": chat_id, "action": action})
         except Exception as exc:  # non-critical; never block the reply on this
             log.debug("sendChatAction failed: %s", exc)
+
+    def send_document(self, chat_id: int, file_path: str,
+                      caption: str | None = None) -> dict[str, Any]:
+        """Upload a local file to the chat as a Telegram document."""
+        data: dict[str, Any] = {"chat_id": chat_id}
+        if caption:
+            data["caption"] = caption[:1024]
+        with open(file_path, "rb") as fh:
+            files = {"document": (os.path.basename(file_path), fh)}
+            resp = self._session.post(f"{self._base}/sendDocument",
+                                      data=data, files=files, timeout=180)
+        resp.raise_for_status()
+        result = resp.json()
+        if not result.get("ok"):
+            raise TelegramError(f"sendDocument failed: {result}")
+        return result["result"]
 
     def send_message(self, chat_id: int, text: str) -> None:
         for chunk in split_message(text or "(empty response)"):

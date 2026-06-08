@@ -35,6 +35,15 @@ FILE_PROMPT_TEMPLATE = (
 # Default task when the user sends a file without a caption.
 DEFAULT_FILE_TASK = "Analyze the uploaded file and describe its contents."
 
+# Output protocol: anything Claude writes into the workspace 'outbox' is delivered
+# back to the user as a Telegram document. Appended so file-in -> file-out works.
+OUTPUT_INSTRUCTION = (
+    "\n\nIf the task requires producing any output file(s), save them to this "
+    "directory:\n\n{outbox}\n\n"
+    "Any files you save there will be delivered back to the user automatically."
+)
+OUTBOX_DIRNAME = "outbox"
+
 
 class Gateway:
     def __init__(self, cfg: Config) -> None:
@@ -110,6 +119,43 @@ class Gateway:
         }
 
     @staticmethod
+    def _outbox_snapshot(outbox: str) -> dict[str, float]:
+        """Map of {file_path: mtime} for files currently in the outbox."""
+        snap: dict[str, float] = {}
+        if os.path.isdir(outbox):
+            for name in os.listdir(outbox):
+                p = os.path.join(outbox, name)
+                if os.path.isfile(p):
+                    try:
+                        snap[p] = os.path.getmtime(p)
+                    except OSError:
+                        pass
+        return snap
+
+    def _deliver_outbox(self, chat_id: int, outbox: str,
+                        before: dict[str, float]) -> None:
+        """Send any files created/modified in the outbox during the last run."""
+        if not os.path.isdir(outbox):
+            return
+        for name in sorted(os.listdir(outbox)):
+            p = os.path.join(outbox, name)
+            if not os.path.isfile(p):
+                continue
+            try:
+                mtime = os.path.getmtime(p)
+            except OSError:
+                continue
+            if p in before and mtime <= before[p]:
+                continue  # unchanged since before the run
+            try:
+                self.tg.send_document(chat_id, p, caption=name)
+                log.info("delivered file to chat_id=%s: %s", chat_id, p)
+            except (TelegramError, requests.RequestException, OSError) as exc:
+                log.error("failed to deliver %s: %s", p, exc)
+                self.tg.send_message(
+                    chat_id, f"⚠️ Не смог отправить файл {name}: {exc}")
+
+    @staticmethod
     def _file_prompt(task: str, abs_path: str) -> str:
         """Build the deterministic 'read-then-act' prompt for an uploaded file."""
         return FILE_PROMPT_TEMPLATE.format(
@@ -161,7 +207,10 @@ class Gateway:
         log.info("saved upload from chat_id=%s -> %s (%d bytes)", chat_id, dest, len(data))
 
         self.tg.send_message(chat_id, f"📎 Файл получен: {safe}")
-        return self._file_prompt(caption, os.path.abspath(dest))
+        prompt = self._file_prompt(caption, os.path.abspath(dest))
+        outbox = os.path.join(self.cfg.workspace, OUTBOX_DIRNAME)
+        os.makedirs(outbox, exist_ok=True)
+        return prompt + OUTPUT_INSTRUCTION.format(outbox=os.path.abspath(outbox))
 
     def _handle_message(self, msg: dict[str, Any]) -> None:
         chat_id = msg.get("chat", {}).get("id")
@@ -197,6 +246,9 @@ class Gateway:
 
         log.info("message from chat_id=%s (%d chars)", chat_id, len(text))
         self.tg.send_chat_action(chat_id, "typing")
+        # Snapshot the outbox so we can deliver any files this run produces.
+        outbox = os.path.join(self.cfg.workspace, OUTBOX_DIRNAME)
+        before = self._outbox_snapshot(outbox)
         try:
             reply = run_claude(
                 text, self.cfg,
@@ -210,6 +262,7 @@ class Gateway:
         reply = reply or "(no output)"
         self.tg.send_message(chat_id, reply)
         log.info("reply sent to chat_id=%s (%d chars)", chat_id, len(reply))
+        self._deliver_outbox(chat_id, outbox, before)
 
     # -- main loop -----------------------------------------------------------
     def run(self) -> None:
