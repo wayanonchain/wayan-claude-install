@@ -30,6 +30,10 @@ check_exists /home/wayan/.claude-lab/uran/CLAUDE.md
 check_exists /home/wayan/.claude-lab/uran/USER.md
 check_exists /opt/wayan-jupiter
 check_exists /opt/wayan-uran
+check_exists /opt/wayan-jupiter/venv/bin/python
+check_exists /opt/wayan-uran/venv/bin/python
+check_exists /opt/wayan-jupiter/gateway/__main__.py
+check_exists /opt/wayan-uran/gateway/__main__.py
 check_exists /etc/wayan-jupiter.env
 check_exists /etc/wayan-uran.env
 check_exists /etc/sudoers.d/wayan-agents

@@ -214,13 +214,42 @@ create_env_file() {
     ok "Keeping existing ${path}."
     return
   fi
+  # Per-agent default permission mode for headless `claude -p` (no TTY).
+  # Initial deployment: both agents use acceptEdits. Uran can be switched to
+  # bypassPermissions manually (edit /etc/wayan-uran.env) after VPS validation.
+  local perm_mode
+  case "${agent}" in
+    jupiter) perm_mode="acceptEdits" ;;
+    uran)    perm_mode="acceptEdits" ;;
+    *)       perm_mode="" ;;
+  esac
+
   log "Creating ${path} ..."
   cat > "${path}" <<EOF
-# Environment for Wayan ${agent} agent
-# Fill in the Telegram bot token, then: systemctl restart wayan-$(echo "${agent}" | tr '[:upper:]' '[:lower:]').service
+# Environment for Wayan ${agent} agent (read by the Telegram gateway via systemd)
+# After editing: systemctl restart wayan-${agent}.service
+
+# --- required ---
 TELEGRAM_BOT_TOKEN=
 WAYAN_AGENT=${agent}
-WAYAN_WORKSPACE=${LAB_DIR}/$(echo "${agent}" | tr '[:upper:]' '[:lower:]')
+WAYAN_WORKSPACE=${LAB_DIR}/${agent}
+
+# --- optional (sane defaults applied by the gateway if left blank) ---
+# Comma-separated Telegram chat IDs allowed to talk to this agent. Empty = allow all.
+TELEGRAM_ALLOWED_CHAT_IDS=
+# Path to the claude binary if it is not on PATH.
+CLAUDE_BIN=claude
+# Seconds to wait for a claude response before giving up.
+CLAUDE_TIMEOUT=300
+# Continue the conversation within a running process (true/false).
+CLAUDE_CONTINUE=true
+# Claude permission mode for headless runs: default | acceptEdits | bypassPermissions | plan
+# (headless agents with no TTY usually need acceptEdits or bypassPermissions to use tools)
+CLAUDE_PERMISSION_MODE=${perm_mode}
+# Telegram long-poll timeout (seconds).
+TELEGRAM_POLL_TIMEOUT=50
+# Log level: DEBUG | INFO | WARNING | ERROR
+LOG_LEVEL=INFO
 EOF
   chown root:"${WAYAN_USER}" "${path}"
   chmod 0640 "${path}"
@@ -271,7 +300,65 @@ EOF
 }
 
 # ----------------------------------------------------------------------------
-# 12. Final banner
+# 12. Deploy the gateway code + Python venv into each /opt dir
+# ----------------------------------------------------------------------------
+deploy_agent_code() {
+  local opt="$1"
+  log "Deploying gateway to ${opt} ..."
+
+  # Ship the latest code each run (this is our code, not user data, so replace it).
+  rm -rf "${opt}/gateway"
+  cp -r "${SRC_DIR}/src/gateway" "${opt}/gateway"
+  cp "${SRC_DIR}/requirements.txt" "${opt}/requirements.txt"
+  chown -R "${WAYAN_USER}:${WAYAN_USER}" "${opt}/gateway" "${opt}/requirements.txt"
+
+  # Create the venv once; reuse it on subsequent runs.
+  if [[ ! -x "${opt}/venv/bin/python" ]]; then
+    log "Creating virtualenv at ${opt}/venv ..."
+    sudo -u "${WAYAN_USER}" python3 -m venv "${opt}/venv"
+  fi
+
+  log "Installing Python dependencies into ${opt}/venv ..."
+  sudo -u "${WAYAN_USER}" "${opt}/venv/bin/pip" install --quiet --upgrade pip
+  sudo -u "${WAYAN_USER}" "${opt}/venv/bin/pip" install --quiet -r "${opt}/requirements.txt"
+
+  # Sanity check: the entrypoint must import cleanly with the venv interpreter.
+  if sudo -u "${WAYAN_USER}" bash -lc "cd '${opt}' && '${opt}/venv/bin/python' -c 'import gateway' >/dev/null 2>&1"; then
+    ok "Gateway deployed to ${opt} (venv + deps verified)."
+  else
+    die "Gateway import failed in ${opt}; check ${opt}/gateway and the venv."
+  fi
+}
+
+deploy_gateway() {
+  deploy_agent_code "${JUPITER_OPT}"
+  deploy_agent_code "${URAN_OPT}"
+}
+
+# ----------------------------------------------------------------------------
+# 13. Claude login gate — agents cannot talk to Claude until 'wayan' has logged in
+# ----------------------------------------------------------------------------
+CLAUDE_LOGGED_IN=0
+
+check_claude_login() {
+  log "Checking Claude Code login for '${WAYAN_USER}' ..."
+  if sudo -u "${WAYAN_USER}" bash -lc '
+        test -f "$HOME/.claude/.credentials.json" ||
+        test -f "$HOME/.config/claude/.credentials.json" ||
+        { test -f "$HOME/.claude.json" && grep -qi "oauthAccount\|\"account\"" "$HOME/.claude.json"; }
+      ' 2>/dev/null; then
+    CLAUDE_LOGGED_IN=1
+    ok "Claude Code appears to be logged in for ${WAYAN_USER}."
+  else
+    CLAUDE_LOGGED_IN=0
+    warn "Claude Code is NOT logged in for ${WAYAN_USER}."
+    warn "Do not start the services yet — agents will error on every message until login."
+    warn "Log in with:  sudo -u ${WAYAN_USER} -i   then run:  claude"
+  fi
+}
+
+# ----------------------------------------------------------------------------
+# 14. Final banner
 # ----------------------------------------------------------------------------
 final_banner() {
   cat <<EOF
@@ -283,7 +370,8 @@ final_banner() {
  INSTALLED
    - Node.js $(node -v 2>/dev/null || echo '?')  /  npm $(npm -v 2>/dev/null || echo '?')
    - python3 $(python3 --version 2>/dev/null | awk '{print $2}')
-   - Claude Code (per user '${WAYAN_USER}')
+   - Claude Code (per user '${WAYAN_USER}')  —  login: $( [[ "${CLAUDE_LOGGED_IN}" -eq 1 ]] && echo 'OK' || echo 'REQUIRED (see NEXT STEPS)' )
+   - Gateway venv + deps: ${JUPITER_OPT}/venv, ${URAN_OPT}/venv
    - User: ${WAYAN_USER}
 
  SERVICES (enabled, start after Claude login)
@@ -335,8 +423,10 @@ main() {
   create_dirs
   copy_templates
   create_env_files
+  deploy_gateway
   install_services
   install_sudoers
+  check_claude_login
   printf '%b' "$(final_banner)\n"
 }
 

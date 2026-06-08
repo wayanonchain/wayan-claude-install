@@ -7,19 +7,24 @@ Wants=network-online.target
 Type=simple
 User=wayan
 Group=wayan
-WorkingDirectory=/home/wayan/.claude-lab/jupiter
+WorkingDirectory=/opt/wayan-jupiter
 EnvironmentFile=/etc/wayan-jupiter.env
-# Placeholder runner. Replace ExecStart with the real Jupiter entrypoint
-# (e.g. the Telegram gateway / claude launcher) once the agent code lands.
-ExecStart=/bin/bash -lc 'echo "[jupiter] env loaded; replace ExecStart with the real entrypoint"; exec sleep infinity'
+Environment=PYTHONUNBUFFERED=1
+# Claude Code is installed per-user; make sure its bin dir is on PATH.
+Environment=PATH=/home/wayan/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/opt/wayan-jupiter/venv/bin/python -m gateway
 Restart=on-failure
 RestartSec=5
+# Allow the loop to finish the current poll/reply on stop or restart.
+TimeoutStopSec=15
+SyslogIdentifier=wayan-jupiter
 # Hardening
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
 ProtectHome=read-only
-ReadWritePaths=/home/wayan/.claude-lab /opt/wayan-jupiter
+# Claude writes auth/state/cache under the home dir; the gateway writes the workspace.
+ReadWritePaths=/home/wayan/.claude-lab /opt/wayan-jupiter /home/wayan/.claude /home/wayan/.config /home/wayan/.cache
 
 [Install]
 WantedBy=multi-user.target

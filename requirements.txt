@@ -1,0 +1,3 @@
+# Wayan Telegram Gateway — Python dependencies
+# Pure long-polling against the Telegram Bot HTTP API; no heavyweight bot framework.
+requests>=2.31,<3

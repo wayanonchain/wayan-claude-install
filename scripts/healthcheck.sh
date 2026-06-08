@@ -25,6 +25,27 @@ if id "${WAYAN_USER}" >/dev/null 2>&1; then
     || bad "claude not found for ${WAYAN_USER} (login may be pending)"
 fi
 
+hdr "Claude login"
+if id "${WAYAN_USER}" >/dev/null 2>&1 && sudo -u "${WAYAN_USER}" bash -lc '
+      test -f "$HOME/.claude/.credentials.json" ||
+      test -f "$HOME/.config/claude/.credentials.json" ||
+      { test -f "$HOME/.claude.json" && grep -qi "oauthAccount\|\"account\"" "$HOME/.claude.json"; }
+    ' 2>/dev/null; then
+  ok "claude appears logged in for ${WAYAN_USER}"
+else
+  bad "claude NOT logged in for ${WAYAN_USER} (run: sudo -u ${WAYAN_USER} -i ; claude)"
+fi
+
+hdr "Gateway deployment"
+for opt in /opt/wayan-jupiter /opt/wayan-uran; do
+  [[ -x "${opt}/venv/bin/python" ]] && ok "venv: ${opt}/venv" || bad "missing venv: ${opt}/venv"
+  [[ -f "${opt}/gateway/__main__.py" ]] && ok "code: ${opt}/gateway" || bad "missing code: ${opt}/gateway"
+  if [[ -x "${opt}/venv/bin/python" && -d "${opt}/gateway" ]]; then
+    sudo -u "${WAYAN_USER}" bash -lc "cd '${opt}' && '${opt}/venv/bin/python' -c 'import gateway, requests'" 2>/dev/null \
+      && ok "imports ok: ${opt}" || bad "import failure: ${opt}"
+  fi
+done
+
 hdr "Services"
 systemctl --no-pager --full status wayan-jupiter.service 2>/dev/null || bad "wayan-jupiter not loaded"
 systemctl --no-pager --full status wayan-uran.service    2>/dev/null || bad "wayan-uran not loaded"
