@@ -31,6 +31,20 @@ check_exists /home/wayan/.claude-lab/jupiter/CLAUDE.md
 check_exists /home/wayan/.claude-lab/jupiter/USER.md
 check_exists /home/wayan/.claude-lab/uran/CLAUDE.md
 check_exists /home/wayan/.claude-lab/uran/USER.md
+
+# Skills + logs (both workspaces)
+for ws in /home/wayan/.claude-lab/jupiter /home/wayan/.claude-lab/uran; do
+  check_exists "$ws/skills/README.md"
+  check_exists "$ws/skills/_proposals/README.md"
+  check_exists "$ws/skills/onchain-alpha/SKILL.md"
+  check_exists "$ws/skills/content-engine/SKILL.md"
+  check_exists "$ws/skills/file-analyst/SKILL.md"
+  check_exists "$ws/skills/server-ops/SKILL.md"
+  check_exists "$ws/skills/security-check/SKILL.md"
+  check_exists "$ws/skills/agent-reviewer/SKILL.md"
+  check_exists "$ws/logs/successful"
+  check_exists "$ws/logs/failed"
+done
 check_exists /opt/wayan-jupiter
 check_exists /opt/wayan-uran
 check_exists /opt/wayan-jupiter/venv/bin/python

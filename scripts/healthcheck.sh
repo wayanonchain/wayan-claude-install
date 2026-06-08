@@ -41,6 +41,13 @@ for d in "/home/${WAYAN_USER}/.config" "/home/${WAYAN_USER}/.cache" "/home/${WAY
   [[ -d "${d}" ]] && ok "present: ${d}" || bad "missing: ${d} (services will fail to start)"
 done
 
+hdr "Skills & logs"
+for ws in "${LAB_DIR}/jupiter" "${LAB_DIR}/uran"; do
+  [[ -f "${ws}/skills/onchain-alpha/SKILL.md" ]] && ok "skills present: ${ws}/skills" || bad "skills missing: ${ws}/skills"
+  [[ -d "${ws}/skills/_proposals" ]] && ok "proposals dir: ${ws}/skills/_proposals" || bad "proposals dir missing: ${ws}"
+  { [[ -d "${ws}/logs/successful" && -d "${ws}/logs/failed" ]]; } && ok "logs dirs: ${ws}/logs" || bad "logs dirs missing: ${ws}/logs"
+done
+
 hdr "Gateway deployment"
 for opt in /opt/wayan-jupiter /opt/wayan-uran; do
   [[ -x "${opt}/venv/bin/python" ]] && ok "venv: ${opt}/venv" || bad "missing venv: ${opt}/venv"

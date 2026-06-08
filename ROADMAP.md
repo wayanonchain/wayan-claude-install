@@ -143,7 +143,30 @@ and observable), then **M1** as the headline feature.
 
 ---
 
-## 5. Cross-cutting concerns
+## 6. Stable skills system (delivered)
+
+A read-only, proposal-based skills layer — Anthropic-style `SKILL.md` playbooks
+that the agents follow, **without any autonomous self-editing**.
+
+- **Six initial skills:** `onchain-alpha`, `content-engine`, `file-analyst`,
+  `server-ops`, `security-check`, `agent-reviewer`.
+- **Read-only in production.** Agents never edit `SKILL.md` or their own
+  `CLAUDE.md`. This is the core safety constraint: production instructions are
+  immutable to the agents themselves.
+- **Proposals, not mutations.** Improvements go to `skills/_proposals/` with a
+  fixed format (skill, reason, observed problem, suggested diff, risk level,
+  rollback note). A human reviews and applies. Nothing is auto-applied.
+- **Pattern logs.** Per-agent `logs/{successful,failed}` capture notable
+  outcomes to inform the `agent-reviewer` skill.
+- **No new dependencies, no external API calls.** Plain Markdown; the installer
+  copies skills into each workspace no-clobber and creates the logs dirs.
+
+### Future (guarded) extensions
+- Optional, explicitly-configured external data sources for `onchain-alpha`.
+- A human-driven "apply proposal" helper (still never automatic).
+- Skill usage metrics feeding `agent-reviewer`.
+
+## 7. Cross-cutting concerns
 
 - **Secrets:** keep tokens/keys in `/etc/wayan-*.env` (mode 0640, root:wayan); never in git.
 - **Least privilege:** revisit Uran's perm mode (`acceptEdits` today) and sudoers

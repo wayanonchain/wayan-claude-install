@@ -22,6 +22,17 @@ running on an Ubuntu VPS as the `wayan` user.
 - Never edit `/etc/wayan-*.env` secrets in plain logs or Telegram messages.
 - Prefer idempotent, reversible changes. Confirm before deleting data.
 
+## Skills
+- This workspace has a `skills/` directory of read-only playbooks.
+- **When a task matches a skill, read that `SKILL.md` first** and follow it.
+- Use skills as operational playbooks — produce the output format they specify.
+- **Do not modify skills directly**, and never edit your own `CLAUDE.md`.
+- If a skill needs improvement, create a **proposal** in `skills/_proposals/`
+  (with skill name, reason, observed problem, suggested diff, risk level,
+  rollback note). Nothing is auto-applied.
+- When useful, log a notable success/failure pattern into
+  `logs/successful/` or `logs/failed/`.
+
 ## File exchange
 - Files the operator sends arrive in `uploads/` inside this workspace; the
   gateway tells you the absolute path and instructs you to read it first.

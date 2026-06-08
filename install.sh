@@ -213,6 +213,25 @@ copy_templates() {
 }
 
 # ----------------------------------------------------------------------------
+# 8b. Skills (read-only playbooks) + logs dirs, copied into each workspace.
+#     Skill files are NOT overwritten if the user has edited them (cp -n).
+# ----------------------------------------------------------------------------
+deploy_skills() {
+  log "Deploying skills + logs into workspaces ..."
+  local ws
+  for ws in "${JUPITER_WS}" "${URAN_WS}"; do
+    install -d -m 0750 -o "${WAYAN_USER}" -g "${WAYAN_USER}" "${ws}/skills"
+    # -n = never overwrite an existing (possibly user-edited) skill file.
+    cp -rn "${SRC_DIR}/skills/." "${ws}/skills/" 2>/dev/null || true
+    install -d -m 0750 -o "${WAYAN_USER}" -g "${WAYAN_USER}" "${ws}/logs/successful"
+    install -d -m 0750 -o "${WAYAN_USER}" -g "${WAYAN_USER}" "${ws}/logs/failed"
+    [[ -f "${SRC_DIR}/logs/README.md" ]] && cp -n "${SRC_DIR}/logs/README.md" "${ws}/logs/README.md" 2>/dev/null || true
+    chown -R "${WAYAN_USER}:${WAYAN_USER}" "${ws}/skills" "${ws}/logs"
+    ok "skills + logs ready in ${ws}"
+  done
+}
+
+# ----------------------------------------------------------------------------
 # 9. Env files (created once; never overwritten so secrets survive)
 # ----------------------------------------------------------------------------
 create_env_file() {
@@ -466,6 +485,7 @@ main() {
   install_claude
   create_dirs
   copy_templates
+  deploy_skills
   create_env_files
   deploy_gateway
   verify_service_dirs

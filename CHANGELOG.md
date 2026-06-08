@@ -6,6 +6,14 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased] — v1.1.0-alpha
 
 ### Added
+- **Stable skills system.** Read-only `SKILL.md` playbooks copied into each
+  workspace: `onchain-alpha`, `content-engine`, `file-analyst`, `server-ops`,
+  `security-check`, `agent-reviewer`. Agents use skills but **never self-edit**
+  them or their `CLAUDE.md`; improvements go through human-reviewed proposals in
+  `skills/_proposals/` (nothing auto-applied). Per-agent `logs/{successful,failed}`
+  for notable patterns. Installer copies skills no-clobber + creates logs dirs;
+  healthcheck/verify and repo tests assert the layout. No new dependencies, no
+  external API calls.
 - **File attachments (documents & photos).** Sending a document or photo is no
   longer ignored: the gateway downloads it into `<workspace>/uploads/` and hands
   Claude the saved path (the message `caption` becomes the task). Photos use the
@@ -13,8 +21,6 @@ This project adheres to [Semantic Versioning](https://semver.org/).
   - New env keys: `FILES_ENABLED` (default `true`), `FILE_MAX_MB` (default `20`).
   - New `reply sent to chat_id=… (N chars)` log line for delivery visibility.
   - Unit tests for download, prompt building, photo selection, limits, routing.
-
-### Added
 - **File output (outbox → Telegram).** Agents can now return files: anything
   Claude writes into `<workspace>/outbox/` during a run is delivered back to the
   user as a Telegram document. Enables file-in → file-out task flows. The outbox

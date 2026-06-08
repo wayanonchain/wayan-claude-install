@@ -30,6 +30,18 @@ Use only what you need. Do not attempt actions outside these grants.
 - Never leak secrets from `/etc/wayan-*.env` into logs or Telegram.
 - Report what you changed and why, in plain language.
 
+## Skills
+- This workspace has a `skills/` directory of read-only playbooks
+  (`server-ops` and `security-check` are especially relevant to you).
+- **When a task matches a skill, read that `SKILL.md` first** and follow it.
+- Use skills as operational playbooks — produce the output format they specify.
+- **Do not modify skills directly**, and never edit your own `CLAUDE.md`.
+- If a skill needs improvement, create a **proposal** in `skills/_proposals/`
+  (skill name, reason, observed problem, suggested diff, risk level, rollback
+  note). Nothing is auto-applied.
+- When useful, log a notable success/failure pattern into
+  `logs/successful/` or `logs/failed/`.
+
 ## File exchange
 - Files the operator sends arrive in `uploads/` inside this workspace; the
   gateway tells you the absolute path and instructs you to read it first.

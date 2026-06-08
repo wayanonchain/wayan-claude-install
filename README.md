@@ -247,7 +247,31 @@ during a run is delivered back to you as a Telegram document — so you can uplo
 a task as a file and get the result back as a file. Only files created/modified
 in that run are sent.
 
-## 14. Troubleshooting
+## 14. Skills
+
+Each agent workspace has a `skills/` directory of **read-only playbooks**
+(`SKILL.md` files). When a task matches a skill, the agent reads that playbook
+first and follows its output format.
+
+| Skill | Purpose |
+| --- | --- |
+| `onchain-alpha` | Token / smart-money / flow / risk analysis |
+| `content-engine` | TikTok / Reels / X content for Wayan Onchain |
+| `file-analyst` | Analyze PDFs, screenshots, reports, contracts |
+| `server-ops` | Read-only VPS diagnostics |
+| `security-check` | Tokens, links, contracts, env, permissions |
+| `agent-reviewer` | Review performance, propose improvements |
+
+**Safety model — no self-editing.** Agents never edit `SKILL.md` or their own
+`CLAUDE.md`. If a skill should change, the agent writes a **proposal** into
+`skills/_proposals/` (skill, reason, observed problem, suggested diff, risk
+level, rollback note) for a human to review. Nothing is auto-applied. Agents may
+log notable success/failure patterns into `logs/successful` / `logs/failed`.
+
+The installer copies `skills/` into both workspaces and **never overwrites**
+skill files you've edited. See [`skills/README.md`](skills/README.md).
+
+## 15. Troubleshooting
 
 | Symptom | Check |
 | --- | --- |
