@@ -198,7 +198,40 @@ sudo bash scripts/uninstall.sh   # type DELETE to confirm
 
 ---
 
-## 13. Troubleshooting
+## 13. Voice input (Groq) — v1.1.0
+
+Both agents accept Telegram **voice notes**. The flow:
+
+```
+voice note → getFile → download OGG/Opus → Groq Whisper → transcript → claude -p → text reply
+```
+
+The transcript is echoed back (📝 …) so you can confirm what was understood,
+then it runs through the normal Claude flow. Text messages are unaffected.
+
+**Enable it** by adding a Groq API key (from <https://console.groq.com>) to each
+agent's env file:
+
+```bash
+sudoedit /etc/wayan-jupiter.env   # set GROQ_API_KEY=...
+sudoedit /etc/wayan-uran.env      # set GROQ_API_KEY=...
+sudo systemctl restart wayan-jupiter.service wayan-uran.service
+```
+
+Relevant env keys (defaults shown):
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `GROQ_API_KEY` | _(empty)_ | Groq key; blank disables voice |
+| `VOICE_ENABLED` | `true` | Master voice switch |
+| `VOICE_INPUT` | `true` | Accept incoming voice → transcription |
+| `VOICE_OUTPUT` | `false` | TTS reply — **not implemented yet** |
+| `GROQ_MODEL` | `whisper-large-v3-turbo` | Transcription model |
+| `VOICE_TIMEOUT` | `120` | Seconds to wait for transcription |
+
+No `ffmpeg` is required — Whisper accepts Telegram's OGG/Opus directly.
+
+## 14. Troubleshooting
 
 | Symptom | Check |
 | --- | --- |
@@ -207,9 +240,6 @@ sudo bash scripts/uninstall.sh   # type DELETE to confirm
 | Service won't start | `journalctl -u wayan-jupiter.service -e` |
 | `claude: command not found` | log in once as `wayan` (section 7) |
 | Telegram silent | token set in the right `.env`? service restarted? |
+| Voice not transcribed | `GROQ_API_KEY` set? `VOICE_ENABLED`/`VOICE_INPUT=true`? service restarted? |
 | sudoers error | `sudo visudo -cf /etc/sudoers.d/wayan-agents` |
 | Need a clean slate | `sudo bash scripts/cleanup.sh` then reinstall |
-
-> **Note:** The `ExecStart` lines in the `systemd/*.service` files are
-> placeholders (they load the env and idle). Replace them with the real
-> Jupiter/Uran entrypoints once the agent code is in place.

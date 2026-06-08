@@ -25,6 +25,18 @@ class Config:
     poll_timeout: int
     allowed_chat_ids: frozenset[int]
     log_level: str
+    # Voice input (Groq Whisper). Output/TTS is intentionally not implemented yet.
+    groq_api_key: str
+    groq_model: str
+    voice_enabled: bool
+    voice_input: bool
+    voice_output: bool
+    voice_timeout: int
+
+    @property
+    def voice_input_ready(self) -> bool:
+        """Voice transcription is usable only when enabled, input on, and keyed."""
+        return self.voice_enabled and self.voice_input and bool(self.groq_api_key)
 
 
 def _get_bool(name: str, default: bool) -> bool:
@@ -79,4 +91,11 @@ def load_config() -> Config:
         poll_timeout=_get_int("TELEGRAM_POLL_TIMEOUT", 50),
         allowed_chat_ids=allowed,
         log_level=os.environ.get("LOG_LEVEL", "INFO").strip().upper() or "INFO",
+        groq_api_key=os.environ.get("GROQ_API_KEY", "").strip(),
+        groq_model=os.environ.get("GROQ_MODEL", "whisper-large-v3-turbo").strip()
+        or "whisper-large-v3-turbo",
+        voice_enabled=_get_bool("VOICE_ENABLED", True),
+        voice_input=_get_bool("VOICE_INPUT", True),
+        voice_output=_get_bool("VOICE_OUTPUT", False),
+        voice_timeout=_get_int("VOICE_TIMEOUT", 120),
     )

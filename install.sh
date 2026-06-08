@@ -257,6 +257,18 @@ CLAUDE_PERMISSION_MODE=${perm_mode}
 TELEGRAM_POLL_TIMEOUT=50
 # Log level: DEBUG | INFO | WARNING | ERROR
 LOG_LEVEL=INFO
+
+# --- voice input (Groq Whisper) — v1.1.0 ---
+# Get a key at https://console.groq.com . Leave blank to disable voice.
+GROQ_API_KEY=
+# Master voice switch and direction toggles. Output (TTS) is not implemented yet.
+VOICE_ENABLED=true
+VOICE_INPUT=true
+VOICE_OUTPUT=false
+# Groq transcription model.
+GROQ_MODEL=whisper-large-v3-turbo
+# Seconds to wait for a transcription before giving up.
+VOICE_TIMEOUT=120
 EOF
   chown root:"${WAYAN_USER}" "${path}"
   chmod 0640 "${path}"

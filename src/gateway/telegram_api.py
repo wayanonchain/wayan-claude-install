@@ -21,6 +21,7 @@ class TelegramError(Exception):
 
 class TelegramClient:
     def __init__(self, token: str, poll_timeout: int = 50) -> None:
+        self._token = token
         self._base = f"https://api.telegram.org/bot{token}"
         self.poll_timeout = poll_timeout
         self._session = requests.Session()
@@ -47,6 +48,17 @@ class TelegramClient:
              "allowed_updates": ["message"]},
             timeout=self.poll_timeout + 15,
         )
+
+    def get_file(self, file_id: str) -> dict[str, Any]:
+        """Resolve a file_id to a file object containing 'file_path'."""
+        return self._call("getFile", {"file_id": file_id})
+
+    def download_file(self, file_path: str) -> bytes:
+        """Download a file by the file_path returned from getFile."""
+        url = f"https://api.telegram.org/file/bot{self._token}/{file_path}"
+        resp = self._session.get(url, timeout=60)
+        resp.raise_for_status()
+        return resp.content
 
     def send_chat_action(self, chat_id: int, action: str = "typing") -> None:
         try:

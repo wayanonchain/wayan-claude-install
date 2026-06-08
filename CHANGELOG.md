@@ -3,6 +3,19 @@
 All notable changes to this project are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased] — v1.1.0-alpha
+
+### Added
+- **Voice input (Groq).** Both agents transcribe Telegram voice notes via Groq
+  Whisper and feed the transcript into the existing `claude -p` flow:
+  `getFile` → download OGG/Opus → Groq transcription → echo 📝 → Claude → text reply.
+  Text messages are unaffected; no `ffmpeg` needed.
+  - New module `src/gateway/transcribe.py`; `getFile`/`download_file` on the
+    Telegram client; voice routing in `app.py`.
+  - New env keys: `GROQ_API_KEY`, `VOICE_ENABLED`, `VOICE_INPUT`,
+    `VOICE_OUTPUT` (TTS not implemented yet), `GROQ_MODEL`, `VOICE_TIMEOUT`.
+  - Unit tests in `tests/test_gateway.py` (network faked).
+
 ## [1.0.1] - 2026-06-08
 
 Post-deployment patch release.

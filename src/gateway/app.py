@@ -6,15 +6,17 @@ cleanly mid-poll without dropping an in-flight reply.
 from __future__ import annotations
 
 import logging
+import os
 import signal
 import time
-from typing import Any
+from typing import Any, Optional
 
 import requests
 
 from .claude_runner import ClaudeError, run_claude
 from .config import Config
 from .telegram_api import TelegramClient, TelegramError
+from .transcribe import TranscriptionError, transcribe
 
 log = logging.getLogger("app")
 
@@ -44,14 +46,59 @@ class Gateway:
             return True
         return chat_id in self.cfg.allowed_chat_ids
 
+    def _transcribe_voice(self, chat_id: int, voice: dict[str, Any]) -> Optional[str]:
+        """Download a Telegram voice/audio note and transcribe it via Groq.
+
+        Returns the transcript, or None if voice is disabled/failed (in which
+        case the user has already been told what happened).
+        """
+        if not (self.cfg.voice_enabled and self.cfg.voice_input):
+            self.tg.send_message(chat_id, "🎤 Voice input is disabled for this agent.")
+            return None
+        if not self.cfg.groq_api_key:
+            self.tg.send_message(
+                chat_id, "🎤 Voice received, but GROQ_API_KEY is not configured.")
+            return None
+        file_id = voice.get("file_id")
+        if not file_id:
+            return None
+
+        self.tg.send_chat_action(chat_id, "typing")
+        try:
+            info = self.tg.get_file(file_id)
+            file_path = info.get("file_path")
+            if not file_path:
+                raise TranscriptionError("Telegram did not return a file_path")
+            audio = self.tg.download_file(file_path)
+            filename = os.path.basename(file_path) or "audio.ogg"
+            transcript = transcribe(audio, filename, self.cfg)
+        except (TelegramError, TranscriptionError, requests.RequestException) as exc:
+            log.error("voice transcription failed: %s", exc)
+            self.tg.send_message(chat_id, f"⚠️ Voice transcription failed: {exc}")
+            return None
+
+        log.info("transcribed voice from chat_id=%s (%d chars)", chat_id, len(transcript))
+        # Echo what we understood so the user can confirm/correct.
+        self.tg.send_message(chat_id, f"📝 {transcript}")
+        return transcript
+
     def _handle_message(self, msg: dict[str, Any]) -> None:
         chat_id = msg.get("chat", {}).get("id")
-        text = (msg.get("text") or "").strip()
-        if chat_id is None or not text:
+        if chat_id is None:
             return
         if not self._allowed(chat_id):
             log.warning("ignoring message from unauthorized chat_id=%s", chat_id)
             return
+
+        text = (msg.get("text") or "").strip()
+        # Voice path: only when there's no text and a voice/audio attachment.
+        if not text:
+            voice = msg.get("voice") or msg.get("audio")
+            if voice:
+                text = self._transcribe_voice(chat_id, voice) or ""
+        if not text:
+            return
+
         if text in ("/start", "/help"):
             self.tg.send_message(
                 chat_id,
