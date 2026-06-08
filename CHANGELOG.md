@@ -6,6 +6,13 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased] — v1.1.0-alpha
 
 ### Added
+- **File attachments (documents & photos).** Sending a document or photo is no
+  longer ignored: the gateway downloads it into `<workspace>/uploads/` and hands
+  Claude the saved path (the message `caption` becomes the task). Photos use the
+  largest size; filenames are sanitized; size capped by `FILE_MAX_MB`.
+  - New env keys: `FILES_ENABLED` (default `true`), `FILE_MAX_MB` (default `20`).
+  - New `reply sent to chat_id=… (N chars)` log line for delivery visibility.
+  - Unit tests for download, prompt building, photo selection, limits, routing.
 - **Voice input (Groq).** Both agents transcribe Telegram voice notes via Groq
   Whisper and feed the transcript into the existing `claude -p` flow:
   `getFile` → download OGG/Opus → Groq transcription → echo 📝 → Claude → text reply.

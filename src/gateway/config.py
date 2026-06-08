@@ -32,6 +32,9 @@ class Config:
     voice_input: bool
     voice_output: bool
     voice_timeout: int
+    # File attachments (documents / photos) downloaded into the workspace.
+    files_enabled: bool
+    file_max_mb: int
 
     @property
     def voice_input_ready(self) -> bool:
@@ -98,4 +101,6 @@ def load_config() -> Config:
         voice_input=_get_bool("VOICE_INPUT", True),
         voice_output=_get_bool("VOICE_OUTPUT", False),
         voice_timeout=_get_int("VOICE_TIMEOUT", 120),
+        files_enabled=_get_bool("FILES_ENABLED", True),
+        file_max_mb=_get_int("FILE_MAX_MB", 20),
     )

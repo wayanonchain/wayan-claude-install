@@ -269,6 +269,12 @@ VOICE_OUTPUT=false
 GROQ_MODEL=whisper-large-v3-turbo
 # Seconds to wait for a transcription before giving up.
 VOICE_TIMEOUT=120
+
+# --- file attachments (documents / photos) — v1.1.0 ---
+# Downloaded into <workspace>/uploads and passed to Claude by path.
+FILES_ENABLED=true
+# Reject attachments larger than this (Telegram Bot API caps downloads at 20 MB).
+FILE_MAX_MB=20
 EOF
   chown root:"${WAYAN_USER}" "${path}"
   chmod 0640 "${path}"

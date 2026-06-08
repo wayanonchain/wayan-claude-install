@@ -7,6 +7,7 @@ Run from the repo root with the gateway on the path:
 Network is never touched: the Telegram client and Groq transcription are faked.
 """
 import os
+import tempfile
 import unittest
 from dataclasses import replace
 
@@ -193,6 +194,80 @@ class VoiceRoutingTests(unittest.TestCase):
         gw = make_gateway(make_cfg())
         gw._handle_message({"chat": {"id": 1}, "text": "hi there"})
         self.assertEqual(captured["prompt"], "hi there")
+        self.assertIn((1, "ok"), gw.tg.sent)
+
+
+class FileHandlingTests(unittest.TestCase):
+    def setUp(self):
+        self.ws = tempfile.mkdtemp(prefix="wayan-ws-")
+        self.cfg = make_cfg(workspace=self.ws)
+        self._orig_run = appmod.run_claude
+
+    def tearDown(self):
+        appmod.run_claude = self._orig_run
+
+    def test_largest_photo(self):
+        photos = [{"file_id": "a", "file_unique_id": "ua"},
+                  {"file_id": "b", "file_unique_id": "ub"}]
+        att = Gateway._largest_photo(photos)
+        self.assertEqual(att["file_id"], "b")
+        self.assertTrue(att["file_name"].endswith(".jpg"))
+        self.assertIsNone(Gateway._largest_photo(None))
+
+    def test_safe_filename(self):
+        name = Gateway._safe_filename("../../etc/pa ss?wd.txt")
+        self.assertNotIn("/", name)
+        self.assertNotIn("?", name)
+        self.assertTrue(name.endswith("pa ss_wd.txt"))
+
+    def test_document_saved_and_prompted(self):
+        gw = make_gateway(self.cfg)
+        gw.tg.file_info = {"file_path": "documents/report.pdf"}
+        prompt = gw._handle_file(
+            1, {"file_id": "f", "file_name": "report.pdf"}, "Проверь отчёт")
+        # file written into <workspace>/uploads
+        uploads = os.path.join(self.ws, "uploads")
+        files = os.listdir(uploads)
+        self.assertEqual(len(files), 1)
+        self.assertTrue(files[0].endswith("report.pdf"))
+        # prompt carries the caption (task) and the saved path
+        self.assertIn("Проверь отчёт", prompt)
+        self.assertIn(uploads, prompt)
+        # an ack was sent
+        self.assertTrue(any("Файл получен" in t for _, t in gw.tg.sent))
+
+    def test_no_caption_uses_default_task(self):
+        gw = make_gateway(self.cfg)
+        prompt = gw._handle_file(1, {"file_id": "f", "file_name": "data.csv"}, "")
+        self.assertIn("Изучи его", prompt)
+
+    def test_files_disabled(self):
+        gw = make_gateway(replace(self.cfg, files_enabled=False))
+        self.assertIsNone(gw._handle_file(1, {"file_id": "f"}, ""))
+        self.assertTrue(any("disabled" in t for _, t in gw.tg.sent))
+
+    def test_file_too_large(self):
+        gw = make_gateway(replace(self.cfg, file_max_mb=1))
+        att = {"file_id": "f", "file_name": "big.bin", "file_size": 5 * 1024 * 1024}
+        self.assertIsNone(gw._handle_file(1, att, ""))
+        self.assertTrue(any("слишком большой" in t for _, t in gw.tg.sent))
+
+    def test_document_routes_into_claude(self):
+        captured = {}
+
+        def fake_run(text, cfg, continue_session):
+            captured["prompt"] = text
+            return "ok"
+
+        appmod.run_claude = fake_run
+        gw = make_gateway(self.cfg)
+        gw._handle_message({
+            "chat": {"id": 1},
+            "document": {"file_id": "f", "file_name": "x.txt"},
+            "caption": "do it",
+        })
+        self.assertIn("do it", captured["prompt"])
+        self.assertIn("uploads", captured["prompt"])
         self.assertIn((1, "ok"), gw.tg.sent)
 
 

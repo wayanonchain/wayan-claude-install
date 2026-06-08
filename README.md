@@ -231,6 +231,17 @@ Relevant env keys (defaults shown):
 
 No `ffmpeg` is required — Whisper accepts Telegram's OGG/Opus directly.
 
+### File attachments (documents & photos)
+
+Send a document or photo and the agent downloads it into
+`<workspace>/uploads/` and passes Claude the saved path; the message **caption**
+(if any) is used as the task. Photos use the largest available size.
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `FILES_ENABLED` | `true` | Accept document/photo attachments |
+| `FILE_MAX_MB` | `20` | Reject larger files (Telegram caps bot downloads at 20 MB) |
+
 ## 14. Troubleshooting
 
 | Symptom | Check |
