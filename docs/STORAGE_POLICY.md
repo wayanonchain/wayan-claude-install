@@ -128,11 +128,77 @@ immediately.
 ### Large-video workflow & a hard Telegram limit
 
 > **Important:** the Telegram **Bot API caps file downloads at 20 MB.** Even
-> though `VIDEO_MAX_MB` allows 250 MB by policy, a bot generally *cannot*
-> download a file larger than 20 MB via `getFile` — the download will fail.
-> For anything bigger, **send a link** (e.g. a cloud/storage URL) instead of the
-> raw file, and ask the agent to work from the link. Raising the real ceiling
-> requires a self-hosted Telegram Bot API server, which is out of scope here.
+> though `VIDEO_MAX_MB` allows 250 MB by policy, a bot *cannot* download a file
+> larger than 20 MB via `getFile`. So when you upload a Telegram file over
+> 20 MB, the agent replies:
+>
+> ```
+> Telegram cannot provide large files to bots.
+> Please send a direct link to the video/audio instead.
+> For YouTube/Reels/TikTok, send the public link.
+> ```
+>
+> Raising the real ceiling requires a self-hosted Telegram Bot API server, which
+> is out of scope here. **Send a link instead** — see below.
+
+## Large-file link ingestion
+
+For files too big for Telegram, send a **URL** in chat and the agent fetches it
+under the same minimal-storage policy.
+
+### Direct file URLs
+Supported extensions: `.mp4 .mov .m4a .mp3 .wav .ogg .webm .pdf .txt .csv`.
+The agent runs a `HEAD` request to read `Content-Type` / `Content-Length`,
+classifies the type, and applies the **same** per-type limits and disk check as
+uploads. The download is **streamed with a hard byte cap** — it aborts if the
+file exceeds the limit, even when `Content-Length` is missing.
+
+- Small links process immediately.
+- Large-but-allowed links warn and wait for **`PROCESS LINK`**:
+  ```
+  ⚠️ Large link detected
+
+  URL: …
+  Type: video
+  Size: 180 MB
+  Limit: 250 MB
+  Available disk: 17 GB
+  Estimated temp usage: up to 360 MB
+
+  Reply with PROCESS LINK to continue.
+  ```
+- Over-limit or disk-short links are rejected without downloading.
+
+### YouTube / TikTok / Reels (optional)
+Set `YTDLP_ENABLED=true` and install `yt-dlp`. For platform links the agent
+downloads **audio only** (never the full video) to `uploads/tmp/`, transcribes
+it via Groq, writes a Markdown transcript, and deletes the raw audio (unless
+`FILE_KEEP_ORIGINAL=true`). If yt-dlp isn't enabled:
+
+```
+Send a direct downloadable file link or enable YTDLP_ENABLED.
+```
+
+### Security (SSRF protection)
+- Only `http`/`https` are allowed; `file://`, `ftp://`, etc. are blocked.
+- Private/local hosts are blocked: `localhost`, `127.0.0.1`, `0.0.0.0`,
+  `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, link-local, and **hostnames
+  that resolve to** any of those (DNS-rebinding defence).
+- Redirects are capped at `MAX_REDIRECTS`; the final URL (post-redirect) is
+  re-checked and logged. Secrets are never written into transcripts.
+
+### Link env settings
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `LINK_INGEST_ENABLED` | `true` | Master switch for URL ingestion |
+| `DIRECT_URL_DOWNLOAD_ENABLED` | `true` | Allow direct file-URL downloads |
+| `YTDLP_ENABLED` | `false` | Enable YouTube/TikTok/etc. via yt-dlp |
+| `MAX_REDIRECTS` | `5` | Max HTTP redirects to follow |
+| `BLOCK_PRIVATE_URLS` | `true` | Block private/local/SSRF targets |
+
+Each link transcript records: source URL, final URL, content type, size, time,
+agent, provider/model, and the transcript/analysis body.
 
 ### Settings
 

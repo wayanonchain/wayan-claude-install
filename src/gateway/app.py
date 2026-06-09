@@ -10,18 +10,25 @@ import os
 import re
 import shutil
 import signal
+import subprocess
 import time
 from datetime import datetime, timezone
 from typing import Any, Optional
+from urllib.parse import urlparse
 
 import requests
 
+from . import link_ingest
 from .claude_runner import ClaudeError, run_claude
 from .config import Config
 from .telegram_api import TelegramClient, TelegramError
 from .transcribe import TranscriptionError, transcribe
 
 log = logging.getLogger("app")
+
+MB = 1024 * 1024
+# Telegram Bot API cannot download files larger than this via getFile.
+TELEGRAM_DOWNLOAD_LIMIT_MB = 20
 
 # Deterministic file-analysis prompt: Claude is explicitly instructed to read the
 # file before acting, instead of relying on it deciding to. Works for any file
@@ -61,6 +68,8 @@ class Gateway:
         self._pending_upload: Optional[dict[str, Any]] = None
         # Large uploads awaiting an explicit "PROCESS FILE" confirmation, per chat.
         self._pending_confirmations: dict[int, dict[str, Any]] = {}
+        # Large links awaiting an explicit "PROCESS LINK" confirmation, per chat.
+        self._pending_links: dict[int, dict[str, Any]] = {}
 
     # -- upload-size safety gate ---------------------------------------------
     def _free_mb(self) -> int:
@@ -134,6 +143,17 @@ class Gateway:
                 chat_id,
                 f"❌ File too large\n\nType: {kind}\nSize: {size_i} MB\n"
                 f"Limit: {limit} MB\n\nPlease upload a smaller file or provide a link.")
+            return None
+
+        # Telegram bots cannot fetch files over ~20 MB — redirect to link ingestion.
+        if size_mb > TELEGRAM_DOWNLOAD_LIMIT_MB:
+            log.info("upload_rejected_size (telegram cap) kind=%s size_mb=%.1f chat_id=%s",
+                     kind, size_mb, chat_id)
+            self.tg.send_message(
+                chat_id,
+                "Telegram cannot provide large files to bots.\n"
+                "Please send a direct link to the video/audio instead.\n"
+                "For YouTube/Reels/TikTok, send the public link.")
             return None
 
         # 7) Small files (< confirm threshold) process immediately.
@@ -212,6 +232,255 @@ class Gateway:
             log.info("upload_processed kind=%s chat_id=%s", kind, chat_id)
         return text
 
+    # -- link ingestion ------------------------------------------------------
+    def _detect_ingest_link(self, text: str) -> Optional[dict[str, Any]]:
+        """If the text contains an ingestible file/platform URL, return it."""
+        url = link_ingest.find_url(text)
+        if not url or not link_ingest.is_supported_link(url):
+            return None
+        return {
+            "url": url,
+            "caption": text.replace(url, "").strip(),
+            "platform": link_ingest.is_platform_url(url),
+        }
+
+    def _disk_short_msg(self, size_label: str, required: int, avail: int) -> str:
+        return (f"❌ Not enough disk space\n\nFile size: {size_label}\n"
+                f"Required free space: {required} MB\nAvailable free space: {avail} MB\n\n"
+                "Please free disk space or send a smaller file.")
+
+    def _gate_link(self, chat_id: int, link: dict[str, Any],
+                   message_id: Any) -> Optional[str]:
+        """Two-step gate for a URL: safety + static limit + disk + confirmation."""
+        if not self.cfg.link_ingest_enabled:
+            self.tg.send_message(chat_id, "🔗 Link ingestion is disabled.")
+            return None
+        url, caption = link["url"], link["caption"]
+
+        if link["platform"]:
+            return self._process_platform_link(chat_id, url, caption, message_id)
+
+        if not self.cfg.direct_url_download_enabled:
+            self.tg.send_message(chat_id, "🔗 Direct URL download is disabled.")
+            return None
+
+        ok, reason = link_ingest.check_url_safety(url, self.cfg.block_private_urls)
+        if not ok:
+            log.info("upload_rejected_url url=%s reason=%s", url, reason)
+            self.tg.send_message(chat_id, f"❌ Link blocked: {reason}")
+            return None
+
+        final_url, ctype, clen = url, None, None
+        try:
+            final_url, ctype, clen = link_ingest.head_probe(url, self.cfg.max_redirects)
+        except link_ingest.LinkError:
+            pass  # some servers reject HEAD; we'll stream with a byte cap instead
+        ok2, reason2 = link_ingest.check_url_safety(final_url, self.cfg.block_private_urls)
+        if not ok2:
+            self.tg.send_message(chat_id, f"❌ Link blocked after redirect: {reason2}")
+            return None
+
+        kind = link_ingest.ext_kind(url) or link_ingest.ctype_kind(ctype) or "document"
+        limit = self._type_limit_mb(kind)
+        size_mb = (clen / MB) if clen else None
+
+        if size_mb is not None and size_mb > limit:
+            log.info("upload_rejected_size url=%s size_mb=%.1f limit=%d", url, size_mb, limit)
+            self.tg.send_message(
+                chat_id,
+                f"❌ File too large\n\nType: {kind}\nSize: {int(round(size_mb))} MB\n"
+                f"Limit: {limit} MB\n\nPlease send a smaller file or another link.")
+            return None
+
+        # Small known-size link: process immediately.
+        if size_mb is not None and size_mb < self.cfg.large_file_confirm_mb:
+            return self._download_and_process_link(
+                chat_id, final_url, caption, message_id, kind, limit, url, ctype)
+
+        # Unknown size: disk-check worst-case (limit), then stream with the cap.
+        if size_mb is None:
+            required = self._required_free_mb(limit)
+            avail = self._free_mb()
+            if avail < required:
+                log.info("upload_rejected_disk url=%s (unknown size)", url)
+                self.tg.send_message(chat_id, self._disk_short_msg("unknown", required, avail))
+                return None
+            return self._download_and_process_link(
+                chat_id, final_url, caption, message_id, kind, limit, url, ctype)
+
+        # Large known-size link within limit: disk-check, then confirm.
+        avail = self._free_mb()
+        required = self._required_free_mb(size_mb)
+        if avail < required:
+            log.info("upload_rejected_disk url=%s size_mb=%.1f required=%d avail=%d",
+                     url, size_mb, required, avail)
+            self.tg.send_message(
+                chat_id, self._disk_short_msg(f"{int(round(size_mb))} MB", required, avail))
+            return None
+
+        self._pending_links[chat_id] = {
+            "url": url, "final_url": final_url, "kind": kind, "caption": caption,
+            "limit": limit, "size_mb": size_mb, "content_type": ctype,
+            "created_at": time.time(), "message_id": message_id,
+        }
+        est = int(round(size_mb * self.cfg.disk_required_multiplier))
+        log.info("large_upload_pending source=link url=%s size_mb=%.1f chat_id=%s",
+                 url, size_mb, chat_id)
+        self.tg.send_message(
+            chat_id,
+            f"⚠️ Large link detected\n\nURL: {url}\nType: {kind}\n"
+            f"Size: {int(round(size_mb))} MB\nLimit: {limit} MB\n"
+            f"Available disk: {self._fmt_disk(avail)}\n"
+            f"Estimated temp usage: up to {est} MB\n\n"
+            "Reply with PROCESS LINK to continue.")
+        return None
+
+    def _confirm_pending_link(self, chat_id: int) -> Optional[str]:
+        pend = self._pending_links.pop(chat_id, None)
+        if not pend:
+            self.tg.send_message(chat_id, "No link is awaiting confirmation.")
+            return None
+        if time.time() - pend["created_at"] > self.cfg.upload_confirmation_timeout_min * 60:
+            log.info("large_upload_expired source=link chat_id=%s", chat_id)
+            self.tg.send_message(chat_id, "⏳ Confirmation expired. Please re-send the link.")
+            return None
+        size_mb = pend["size_mb"]
+        required = self._required_free_mb(size_mb)
+        avail = self._free_mb()
+        if avail < required:  # re-check disk after confirmation
+            log.info("upload_rejected_disk (recheck link) url=%s", pend["url"])
+            self.tg.send_message(
+                chat_id, self._disk_short_msg(f"{int(round(size_mb))} MB", required, avail))
+            return None
+        log.info("large_upload_confirmed source=link url=%s chat_id=%s", pend["url"], chat_id)
+        return self._download_and_process_link(
+            chat_id, pend["final_url"], pend["caption"], pend["message_id"],
+            pend["kind"], pend["limit"], pend["url"], pend.get("content_type"))
+
+    def _download_and_process_link(self, chat_id: int, url: str, caption: str,
+                                   message_id: Any, kind: str, limit_mb: int,
+                                   source_url: str, content_type: Optional[str]) -> Optional[str]:
+        tmp = self._uploads_tmp()
+        os.makedirs(tmp, exist_ok=True)
+        base = os.path.basename(urlparse(url).path) or f"link_{int(time.time())}"
+        dest = os.path.join(tmp, self._safe_filename(base))
+        self.tg.send_chat_action(chat_id, "typing")
+        try:
+            final_url, nbytes = link_ingest.stream_download(
+                url, dest, limit_mb * MB, self.cfg.max_redirects)
+        except link_ingest.LinkError as exc:
+            self._safe_remove(dest)
+            if "max bytes" in str(exc):
+                log.info("upload_rejected_size (link stream) url=%s", source_url)
+                self.tg.send_message(
+                    chat_id,
+                    f"❌ File too large\n\nType: {kind}\nLimit: {limit_mb} MB\n\n"
+                    "The link exceeded the limit while downloading.")
+            else:
+                self.tg.send_message(chat_id, f"⚠️ Could not download the link: {exc}")
+            return None
+        except requests.RequestException as exc:
+            self._safe_remove(dest)
+            self.tg.send_message(chat_id, f"⚠️ Could not download the link: {exc}")
+            return None
+
+        ok, reason = link_ingest.check_url_safety(final_url, self.cfg.block_private_urls)
+        if not ok:
+            self._safe_remove(dest)
+            self.tg.send_message(chat_id, f"❌ Link blocked after redirect: {reason}")
+            return None
+
+        log.info("link downloaded url=%s final=%s bytes=%d kind=%s",
+                 source_url, final_url, nbytes, kind)
+        log.info("upload_processed kind=%s source=link chat_id=%s", kind, chat_id)
+
+        meta = {
+            "filename": os.path.basename(dest),
+            "size": nbytes,
+            "datetime": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "message_id": message_id,
+            "source_url": source_url,
+            "final_url": final_url,
+            "content_type": content_type,
+        }
+        if kind in ("audio", "video"):
+            return self._media_file_to_transcript(chat_id, dest, meta)
+        # document / image: hand the path to Claude; transcript on finalize.
+        self._pending_upload = {**meta, "raw_path": dest}
+        self.tg.send_message(chat_id, f"📎 Файл получен по ссылке: {meta['filename']}")
+        prompt = self._file_prompt(caption, os.path.abspath(dest))
+        outbox = os.path.join(self.cfg.workspace, OUTBOX_DIRNAME)
+        os.makedirs(outbox, exist_ok=True)
+        return prompt + OUTPUT_INSTRUCTION.format(outbox=os.path.abspath(outbox))
+
+    def _media_file_to_transcript(self, chat_id: int, path: str,
+                                  meta: dict[str, Any]) -> Optional[str]:
+        """Transcribe an already-downloaded media file and write a Markdown transcript."""
+        try:
+            with open(path, "rb") as fh:
+                data = fh.read()
+            transcript = transcribe(data, os.path.basename(path), self.cfg)
+        except (TranscriptionError, requests.RequestException, OSError) as exc:
+            log.error("link transcription failed: %s", exc)
+            self.tg.send_message(chat_id, f"⚠️ Transcription failed: {exc}")
+            if not self.cfg.file_keep_original:
+                self._safe_remove(path)
+            return None
+        self._write_transcript({**meta, "provider": f"groq:{self.cfg.groq_model}"}, transcript)
+        if not self.cfg.file_keep_original:
+            self._safe_remove(path)
+        self.tg.send_message(chat_id, f"📝 {transcript}")
+        return transcript
+
+    def _process_platform_link(self, chat_id: int, url: str, caption: str,
+                               message_id: Any) -> Optional[str]:
+        """YouTube/TikTok/etc. via yt-dlp (audio-only). Optional and off by default."""
+        if not (self.cfg.ytdlp_enabled and shutil.which("yt-dlp")):
+            self.tg.send_message(
+                chat_id,
+                "Send a direct downloadable file link or enable YTDLP_ENABLED.")
+            return None
+        ok, reason = link_ingest.check_url_safety(url, self.cfg.block_private_urls)
+        if not ok:
+            self.tg.send_message(chat_id, f"❌ Link blocked: {reason}")
+            return None
+        tmp = self._uploads_tmp()
+        os.makedirs(tmp, exist_ok=True)
+        stem = self._safe_filename("yt_audio")
+        out_tmpl = os.path.join(tmp, stem + ".%(ext)s")
+        self.tg.send_chat_action(chat_id, "typing")
+        try:
+            subprocess.run(
+                ["yt-dlp", "-x", "--audio-format", "mp3", "--no-playlist",
+                 "--max-filesize", f"{self.cfg.audio_max_mb}M", "-o", out_tmpl, url],
+                check=True, capture_output=True, timeout=900)
+        except (subprocess.SubprocessError, OSError) as exc:
+            log.error("yt-dlp failed: %s", exc)
+            self.tg.send_message(chat_id, f"⚠️ Could not fetch audio from the link: {exc}")
+            return None
+        produced = [os.path.join(tmp, f) for f in os.listdir(tmp) if f.startswith(stem)]
+        if not produced:
+            self.tg.send_message(chat_id, "⚠️ No audio was produced from the link.")
+            return None
+        dest = produced[0]
+        log.info("upload_processed kind=audio source=ytdlp chat_id=%s", chat_id)
+        meta = {
+            "filename": os.path.basename(dest),
+            "size": os.path.getsize(dest),
+            "datetime": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "message_id": message_id,
+            "source_url": url,
+            "final_url": url,
+        }
+        return self._media_file_to_transcript(chat_id, dest, meta)
+
+    @staticmethod
+    def _safe_remove(path: str) -> None:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+
     # -- storage (minimal-storage policy) ------------------------------------
     def _uploads_tmp(self) -> str:
         return os.path.join(self.cfg.workspace, self.cfg.uploads_tmp_dir)
@@ -239,12 +508,15 @@ class Gateway:
             f"- Agent: {self.cfg.agent}",
             f"- Telegram message id: {meta.get('message_id', '')}",
             f"- Provider/model: {meta.get('provider', '')}",
-            "",
-            "---",
-            "",
-            (body or "").strip(),
-            "",
         ]
+        # Link-ingested files also record their source URLs and content type.
+        if meta.get("source_url"):
+            lines.append(f"- Source URL: {meta.get('source_url')}")
+        if meta.get("final_url"):
+            lines.append(f"- Final URL: {meta.get('final_url')}")
+        if meta.get("content_type"):
+            lines.append(f"- Content type: {meta.get('content_type')}")
+        lines += ["", "---", "", (body or "").strip(), ""]
         with open(dest, "w") as fh:
             fh.write("\n".join(lines))
         log.info("wrote transcript %s", dest)
@@ -483,9 +755,14 @@ class Gateway:
         message_id = msg.get("message_id", "")
         self._pending_upload = None
 
-        # "PROCESS FILE" confirms a previously-gated large upload.
+        # "PROCESS FILE" / "PROCESS LINK" confirm a previously-gated large item.
         if text == "PROCESS FILE":
             text = self._confirm_pending(chat_id) or ""
+            if not text:
+                self._pending_upload = None
+                return
+        elif text == "PROCESS LINK":
+            text = self._confirm_pending_link(chat_id) or ""
             if not text:
                 self._pending_upload = None
                 return
@@ -497,8 +774,17 @@ class Gateway:
                 if not text:
                     self._pending_upload = None
                     return
-            elif not text:
-                return
+            else:
+                # A media/document/platform URL in the text is ingested as a file.
+                link = (self._detect_ingest_link(text)
+                        if (text and self.cfg.link_ingest_enabled) else None)
+                if link:
+                    text = self._gate_link(chat_id, link, message_id) or ""
+                    if not text:
+                        self._pending_upload = None
+                        return
+                elif not text:
+                    return
 
         if text in ("/start", "/help"):
             self.tg.send_message(

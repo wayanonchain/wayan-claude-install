@@ -22,6 +22,7 @@ from gateway import app as appmod                       # noqa: E402
 from gateway.app import Gateway                         # noqa: E402
 from gateway.config import load_config                  # noqa: E402
 from gateway.telegram_api import split_message          # noqa: E402
+from gateway import link_ingest as link_ingest_mod        # noqa: E402
 from gateway import transcribe as transcribe_mod          # noqa: E402
 from gateway.transcribe import transcribe, TranscriptionError  # noqa: E402
 
@@ -458,17 +459,27 @@ class UploadSafetyTests(unittest.TestCase):
         self.assertEqual(gw.tg.get_file_calls, ["f"])        # downloaded
         self.assertNotIn(1, gw._pending_confirmations)       # no pending
 
-    def test_large_file_asks_for_confirmation(self):
-        gw = self._gw(free_mb=100000)
+    def test_telegram_oversized_suggests_link(self):
+        # > Telegram's 20 MB download cap -> tell the user to send a link.
+        gw = self._gw()
         gw._handle_message({"chat": {"id": 1}, "document": self._doc(30),
+                            "message_id": 7})
+        self.assertTrue(any("send a direct link" in t for _, t in gw.tg.sent))
+        self.assertEqual(gw.tg.get_file_calls, [])
+        self.assertNotIn(1, gw._pending_confirmations)
+
+    def test_large_file_asks_for_confirmation(self):
+        # 10 MB file with a 5 MB confirm threshold (below the Telegram cap).
+        gw = self._gw(free_mb=100000, large_file_confirm_mb=5)
+        gw._handle_message({"chat": {"id": 1}, "document": self._doc(10),
                             "caption": "x", "message_id": 7})
         self.assertTrue(any("Large file detected" in t for _, t in gw.tg.sent))
         self.assertIn(1, gw._pending_confirmations)          # pending stored
         self.assertEqual(gw.tg.get_file_calls, [])           # NOT downloaded
 
     def test_process_file_continues(self):
-        gw = self._gw(free_mb=100000)
-        gw._handle_message({"chat": {"id": 1}, "document": self._doc(30),
+        gw = self._gw(free_mb=100000, large_file_confirm_mb=5)
+        gw._handle_message({"chat": {"id": 1}, "document": self._doc(10),
                             "caption": "x", "message_id": 7})
         gw._handle_message({"chat": {"id": 1}, "text": "PROCESS FILE",
                             "message_id": 8})
@@ -477,10 +488,9 @@ class UploadSafetyTests(unittest.TestCase):
         self.assertNotIn(1, gw._pending_confirmations)       # cleared
 
     def test_expired_pending_does_not_process(self):
-        gw = self._gw(free_mb=100000)
-        gw._handle_message({"chat": {"id": 1}, "document": self._doc(30),
+        gw = self._gw(free_mb=100000, large_file_confirm_mb=5)
+        gw._handle_message({"chat": {"id": 1}, "document": self._doc(10),
                             "message_id": 7})
-        # age the pending beyond the timeout
         gw._pending_confirmations[1]["created_at"] -= (
             gw.cfg.upload_confirmation_timeout_min * 60 + 5)
         gw._handle_message({"chat": {"id": 1}, "text": "PROCESS FILE"})
@@ -497,22 +507,121 @@ class UploadSafetyTests(unittest.TestCase):
         self.assertNotIn(1, gw._pending_confirmations)
 
     def test_insufficient_disk_rejected(self):
-        gw = self._gw(free_mb=100)  # far below required for a 30 MB file
-        gw._handle_message({"chat": {"id": 1}, "document": self._doc(30),
+        gw = self._gw(free_mb=100, large_file_confirm_mb=5)  # below required for 10 MB
+        gw._handle_message({"chat": {"id": 1}, "document": self._doc(10),
                             "message_id": 7})
         self.assertTrue(any("Not enough disk space" in t for _, t in gw.tg.sent))
         self.assertEqual(gw.tg.get_file_calls, [])
         self.assertNotIn(1, gw._pending_confirmations)
 
     def test_disk_rechecked_after_confirmation(self):
-        gw = self._gw(free_mb=100000)
-        gw._handle_message({"chat": {"id": 1}, "document": self._doc(30),
+        gw = self._gw(free_mb=100000, large_file_confirm_mb=5)
+        gw._handle_message({"chat": {"id": 1}, "document": self._doc(10),
                             "message_id": 7})
         self.assertIn(1, gw._pending_confirmations)
         gw._free_mb = lambda: 100  # disk filled up before confirmation
         gw._handle_message({"chat": {"id": 1}, "text": "PROCESS FILE"})
         self.assertTrue(any("Not enough disk space" in t for _, t in gw.tg.sent))
         self.assertEqual(gw.tg.get_file_calls, [])           # blocked on recheck
+
+
+class LinkIngestTests(unittest.TestCase):
+    """Large-file ingestion from URLs (direct files + yt-dlp gating + SSRF)."""
+
+    def setUp(self):
+        self.ws = tempfile.mkdtemp(prefix="wayan-ws-")
+        self._orig_run = appmod.run_claude
+        self._orig_transcribe = appmod.transcribe
+        self._orig_head = link_ingest_mod.head_probe
+        self._orig_stream = link_ingest_mod.stream_download
+        appmod.run_claude = lambda text, cfg, continue_session: "ok"
+        appmod.transcribe = lambda audio, name, cfg: "link transcript"
+
+    def tearDown(self):
+        appmod.run_claude = self._orig_run
+        appmod.transcribe = self._orig_transcribe
+        link_ingest_mod.head_probe = self._orig_head
+        link_ingest_mod.stream_download = self._orig_stream
+
+    def _gw(self, free_mb=100000, **over):
+        gw = make_gateway(make_cfg(workspace=self.ws, **over))
+        gw._free_mb = lambda: free_mb
+        return gw
+
+    def _fake_head(self, ctype, clen):
+        def head(url, max_redirects=5):
+            return (url, ctype, clen)
+        link_ingest_mod.head_probe = head
+
+    def _fake_stream(self, nbytes, hard_cap_error=False):
+        def stream(url, dest, max_bytes, max_redirects=5):
+            if hard_cap_error:
+                raise link_ingest_mod.LinkError("exceeded max bytes")
+            with open(dest, "wb") as fh:
+                fh.write(b"x" * min(nbytes, 1024))
+            return url, nbytes
+        link_ingest_mod.stream_download = stream
+
+    # public IP literal → no DNS lookup, passes SSRF check
+    URL_VID = "http://93.184.216.34/clip.mp4"
+    URL_DOC = "http://93.184.216.34/report.pdf"
+
+    def test_direct_small_url_processes(self):
+        self._fake_head("application/pdf", 2 * MB)
+        self._fake_stream(2 * MB)
+        gw = self._gw()
+        gw._handle_message({"chat": {"id": 1}, "text": f"summarize {self.URL_DOC}",
+                            "message_id": 1})
+        self.assertIn((1, "ok"), gw.tg.sent)            # processed through Claude
+        self.assertNotIn(1, gw._pending_links)
+
+    def test_large_url_asks_process_link(self):
+        self._fake_head("video/mp4", 180 * MB)          # < 250 video limit, large
+        gw = self._gw(free_mb=100000)
+        gw._handle_message({"chat": {"id": 1}, "text": self.URL_VID, "message_id": 1})
+        self.assertTrue(any("Large link detected" in t for _, t in gw.tg.sent))
+        self.assertIn(1, gw._pending_links)
+
+    def test_process_link_continues(self):
+        self._fake_head("video/mp4", 180 * MB)
+        self._fake_stream(180 * MB)
+        gw = self._gw(free_mb=100000)
+        gw._handle_message({"chat": {"id": 1}, "text": self.URL_VID, "message_id": 1})
+        gw._handle_message({"chat": {"id": 1}, "text": "PROCESS LINK", "message_id": 2})
+        self.assertIn((1, "ok"), gw.tg.sent)            # transcript -> Claude -> reply
+        self.assertNotIn(1, gw._pending_links)
+
+    def test_oversized_url_rejected(self):
+        self._fake_head("video/mp4", 684 * MB)          # > 250 video limit
+        gw = self._gw()
+        gw._handle_message({"chat": {"id": 1}, "text": self.URL_VID, "message_id": 1})
+        self.assertTrue(any("File too large" in t for _, t in gw.tg.sent))
+        self.assertNotIn(1, gw._pending_links)
+
+    def test_missing_content_length_streams_with_guard(self):
+        self._fake_head("video/mp4", None)              # unknown size
+        self._fake_stream(5 * MB)                       # within cap
+        gw = self._gw(free_mb=100000)
+        gw._handle_message({"chat": {"id": 1}, "text": self.URL_VID, "message_id": 1})
+        self.assertIn((1, "ok"), gw.tg.sent)            # streamed + processed
+
+    def test_private_url_blocked(self):
+        gw = self._gw()
+        gw._handle_message({"chat": {"id": 1},
+                            "text": "http://192.168.1.5/clip.mp4", "message_id": 1})
+        self.assertTrue(any("blocked" in t.lower() for _, t in gw.tg.sent))
+
+    def test_unsupported_scheme_blocked(self):
+        gw = self._gw()
+        gw._handle_message({"chat": {"id": 1},
+                            "text": "ftp://1.2.3.4/clip.mp4", "message_id": 1})
+        self.assertTrue(any("blocked" in t.lower() for _, t in gw.tg.sent))
+
+    def test_ytdlp_disabled_message(self):
+        gw = self._gw(ytdlp_enabled=False)
+        gw._handle_message({"chat": {"id": 1},
+                            "text": "https://youtu.be/abc123", "message_id": 1})
+        self.assertTrue(any("YTDLP_ENABLED" in t for _, t in gw.tg.sent))
 
 
 if __name__ == "__main__":

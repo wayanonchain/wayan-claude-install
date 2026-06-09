@@ -40,6 +40,16 @@ class EnvDefaultsTests(unittest.TestCase):
         ):
             self.assertIn(line, self.src, f"missing env default: {line}")
 
+    def test_link_ingest_env_defaults_present(self):
+        for line in (
+            "LINK_INGEST_ENABLED=true",
+            "DIRECT_URL_DOWNLOAD_ENABLED=true",
+            "YTDLP_ENABLED=false",
+            "MAX_REDIRECTS=5",
+            "BLOCK_PRIVATE_URLS=true",
+        ):
+            self.assertIn(line, self.src, f"missing env default: {line}")
+
     def test_installer_creates_storage_dirs(self):
         self.assertIn("uploads/tmp", self.src)
         self.assertIn("/transcripts", self.src)

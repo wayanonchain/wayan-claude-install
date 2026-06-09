@@ -50,6 +50,12 @@ class Config:
     disk_min_free_mb: int
     disk_required_multiplier: int
     upload_confirmation_timeout_min: int
+    # Large-file link ingestion (URLs instead of Telegram uploads).
+    link_ingest_enabled: bool
+    direct_url_download_enabled: bool
+    ytdlp_enabled: bool
+    max_redirects: int
+    block_private_urls: bool
 
     @property
     def voice_input_ready(self) -> bool:
@@ -133,4 +139,9 @@ def load_config() -> Config:
         disk_min_free_mb=_get_int("DISK_MIN_FREE_MB", 2048),
         disk_required_multiplier=_get_int("DISK_REQUIRED_MULTIPLIER", 2),
         upload_confirmation_timeout_min=_get_int("UPLOAD_CONFIRMATION_TIMEOUT_MIN", 15),
+        link_ingest_enabled=_get_bool("LINK_INGEST_ENABLED", True),
+        direct_url_download_enabled=_get_bool("DIRECT_URL_DOWNLOAD_ENABLED", True),
+        ytdlp_enabled=_get_bool("YTDLP_ENABLED", False),
+        max_redirects=_get_int("MAX_REDIRECTS", 5),
+        block_private_urls=_get_bool("BLOCK_PRIVATE_URLS", True),
     )

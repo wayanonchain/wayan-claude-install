@@ -330,6 +330,18 @@ DISK_REQUIRED_MULTIPLIER=2
 # How long a pending large-upload confirmation stays valid.
 UPLOAD_CONFIRMATION_TIMEOUT_MIN=15
 
+# --- large-file link ingestion (URLs instead of Telegram uploads) ---
+# Master switch for ingesting media/document URLs sent in chat.
+LINK_INGEST_ENABLED=true
+# Allow downloading direct file URLs (.mp4/.mp3/.pdf/...).
+DIRECT_URL_DOWNLOAD_ENABLED=true
+# YouTube/TikTok/etc. via yt-dlp (audio-only). Requires yt-dlp installed.
+YTDLP_ENABLED=false
+# Max HTTP redirects to follow when fetching a link.
+MAX_REDIRECTS=5
+# Block private/local network URLs (SSRF protection). Keep true.
+BLOCK_PRIVATE_URLS=true
+
 # --- minimal-storage policy (heavy uploads are temporary; knowledge is Markdown) ---
 # Keep raw uploaded files after processing? false = delete once a transcript exists.
 FILE_KEEP_ORIGINAL=false

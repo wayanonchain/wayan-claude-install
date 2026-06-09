@@ -6,6 +6,21 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased] — v1.1.0-alpha
 
 ### Added
+- **Safe link ingestion for large files.** Since Telegram bots can't download
+  files over ~20 MB, large media is ingested from a URL instead. Direct file
+  URLs (`.mp4/.mov/.m4a/.mp3/.wav/.ogg/.webm/.pdf/.txt/.csv`) are `HEAD`-probed,
+  classified, size/disk-gated (same limits as uploads), and **streamed with a
+  hard byte cap** (aborts past the limit even without Content-Length). Large
+  links require a `PROCESS LINK` confirmation (per-chat, expiring, disk
+  re-checked). Optional `YTDLP_ENABLED` fetches **audio-only** from
+  YouTube/TikTok/etc. via yt-dlp → Groq transcript. SSRF protection blocks
+  non-http(s) and private/local hosts (incl. DNS-rebinding), caps redirects, and
+  re-checks the post-redirect URL. Telegram uploads over 20 MB now tell the user
+  to send a link. Link transcripts record source/final URL + content type. New
+  env: `LINK_INGEST_ENABLED`, `DIRECT_URL_DOWNLOAD_ENABLED`, `YTDLP_ENABLED`,
+  `MAX_REDIRECTS`, `BLOCK_PRIVATE_URLS`. New `src/gateway/link_ingest.py`; docs
+  in STORAGE_POLICY; tests cover direct/large/oversized/streaming-guard/SSRF/
+  yt-dlp paths.
 - **Safe large-upload confirmation flow.** Uploads now pass a two-step gate
   before download: (1) a per-type static size limit
   (`VIDEO_MAX_MB`/`AUDIO_MAX_MB`/`DOCUMENT_MAX_MB`/`IMAGE_MAX_MB`, fallback
