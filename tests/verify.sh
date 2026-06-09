@@ -44,6 +44,13 @@ for ws in /home/wayan/.claude-lab/jupiter /home/wayan/.claude-lab/uran; do
   check_exists "$ws/skills/agent-reviewer/SKILL.md"
   check_exists "$ws/logs/successful"
   check_exists "$ws/logs/failed"
+  # Day 2 orchestration
+  check_exists "$ws/orchestration/README.md"
+  check_exists "$ws/orchestration/rules/safety.md"
+  check_exists "$ws/orchestration/learnings/inbox"
+  check_exists "$ws/orchestration/memory/cold.md"
+  check_exists "$ws/orchestration/mapping/infrastructure.md"
+  check_exists "$ws/orchestration/skill-lab/proposals"
 done
 check_exists /opt/wayan-jupiter
 check_exists /opt/wayan-uran

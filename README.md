@@ -271,7 +271,36 @@ log notable success/failure patterns into `logs/successful` / `logs/failed`.
 The installer copies `skills/` into both workspaces and **never overwrites**
 skill files you've edited. See [`skills/README.md`](skills/README.md).
 
-## 15. Troubleshooting
+## 15. Day 2 Orchestration
+
+On top of skills, each workspace has an `orchestration/` layer that keeps the
+agents consistent, safe, and improvable **under your control** — they never
+self-edit production instructions.
+
+```
+orchestration/
+├── rules/       # hard rules (safety, skill-routing, services-map)
+├── learnings/   # captured feedback → inbox → reviewed
+├── memory/      # tiered context: hot / warm / cold
+├── mapping/     # infrastructure, services, accounts (you customize)
+└── skill-lab/   # experimental new-skill proposals
+```
+
+**New users get a ready template.** Customize these for your own project:
+
+- `orchestration/mapping/infrastructure.md`
+- `orchestration/mapping/services.md`
+- `orchestration/mapping/accounts.example.md` → copy to `accounts.md` (git-ignored)
+- `orchestration/memory/cold.md`
+- `orchestration/rules/services-map.md`
+
+**The manual learning loop:** you give feedback ("запомни…", "исправь…", "не
+делай так…") → the agent records it in `learnings/inbox/` → on request it reviews
+and **proposes** what should become a rule/skill/memory/mapping entry → you
+approve → only then is it applied. **Auto-fix is disabled by default.** Full
+guide: [`docs/DAY2_ORCHESTRATION.md`](docs/DAY2_ORCHESTRATION.md).
+
+## 16. Troubleshooting
 
 | Symptom | Check |
 | --- | --- |

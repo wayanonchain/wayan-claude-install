@@ -6,6 +6,16 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased] — v1.1.0-alpha
 
 ### Added
+- **Day 2 orchestration layer.** New `orchestration/` tree copied into each
+  workspace: `rules/` (safety, skill-routing, services-map), `learnings/`
+  (`inbox/` → `reviewed/`), `memory/` (`hot`/`warm`/`cold`), `mapping/`
+  (infrastructure, services, accounts.example), and `skill-lab/`. Adds a
+  `## Day 2 Orchestration` checklist to both `CLAUDE.md` templates and a manual
+  learning loop (feedback → inbox → review → propose → **approve** → apply).
+  **No autonomous auto-fix**; agents never edit production rules/memory/skills/
+  `CLAUDE.md` without explicit approval. Installer copies it no-clobber; real
+  `accounts.md` is git-ignored. Guide: `docs/DAY2_ORCHESTRATION.md`. No new
+  dependencies, no external API calls.
 - **Skill chaining.** The `## Skills Usage` section now tells agents to chain
   multiple skills for cross-domain tasks (read all relevant `SKILL.md` first,
   apply in order) — e.g. an uploaded token report + "make an X post" routes

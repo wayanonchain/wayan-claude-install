@@ -30,6 +30,19 @@ Use only what you need. Do not attempt actions outside these grants.
 - Never leak secrets from `/etc/wayan-*.env` into logs or Telegram.
 - Report what you changed and why, in plain language.
 
+## Day 2 Orchestration
+
+Before important tasks:
+1. Read CLAUDE.md principles.
+2. Check orchestration/rules/ for hard rules.
+3. Check orchestration/mapping/ if the task involves infrastructure, services, accounts, GitHub, VPS, Telegram, Groq, or external tools.
+4. Check orchestration/memory/ for relevant context.
+5. Use skills/ when a task matches a skill.
+6. If user gives feedback like "запомни", "исправь", "не делай так", write it to orchestration/learnings/inbox/.
+7. Do not apply self-fixes automatically.
+8. Propose improvements to rules/skills/memory as proposal files only.
+9. Never edit production rules, skills, memory, CLAUDE.md, or USER.md without explicit approval.
+
 ## Skills Usage
 
 Before answering, classify the task.

@@ -48,6 +48,14 @@ for ws in "${LAB_DIR}/jupiter" "${LAB_DIR}/uran"; do
   { [[ -d "${ws}/logs/successful" && -d "${ws}/logs/failed" ]]; } && ok "logs dirs: ${ws}/logs" || bad "logs dirs missing: ${ws}/logs"
 done
 
+hdr "Orchestration (Day 2)"
+for ws in "${LAB_DIR}/jupiter" "${LAB_DIR}/uran"; do
+  [[ -f "${ws}/orchestration/README.md" ]] && ok "orchestration: ${ws}/orchestration" || bad "orchestration missing: ${ws}"
+  for d in rules learnings memory mapping skill-lab; do
+    [[ -d "${ws}/orchestration/${d}" ]] && ok "  ${d}/ present" || bad "  ${d}/ missing in ${ws}"
+  done
+done
+
 hdr "Gateway deployment"
 for opt in /opt/wayan-jupiter /opt/wayan-uran; do
   [[ -x "${opt}/venv/bin/python" ]] && ok "venv: ${opt}/venv" || bad "missing venv: ${opt}/venv"

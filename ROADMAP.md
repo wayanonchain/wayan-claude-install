@@ -166,7 +166,30 @@ that the agents follow, **without any autonomous self-editing**.
 - A human-driven "apply proposal" helper (still never automatic).
 - Skill usage metrics feeding `agent-reviewer`.
 
-## 7. Cross-cutting concerns
+## 7. Day 2 orchestration layer (implemented — foundation)
+
+A stable orchestration layer that keeps the agents consistent and improvable
+without any autonomous self-editing. This is the foundation the rest of Day 2
+builds on.
+
+- **`rules/`** — hard rules (safety, skill-routing, services-map).
+- **`learnings/`** — captured user feedback (`inbox/` → `reviewed/`).
+- **`memory/`** — tiered context (`hot` / `warm` / `cold`).
+- **`mapping/`** — infrastructure, services, accounts (user-customized; secrets
+  stay out of git via `accounts.md`).
+- **`skill-lab/`** — experimental new-skill proposals.
+- **Manual learning loop:** feedback → inbox → review → propose → **approve** →
+  apply. The agent never edits `CLAUDE.md`, `rules/`, `memory/`, or `SKILL.md`
+  on its own.
+- Copied into both workspaces by the installer (no-clobber); no new
+  dependencies, no external API calls.
+
+### Future (optional, disabled by default)
+- **Autonomous auto-fix** — letting the agent apply approved-class changes
+  without a per-change prompt. Explicitly **off by default**; opt-in only, and
+  only after the manual loop has proven a change class safe.
+
+## 8. Cross-cutting concerns
 
 - **Secrets:** keep tokens/keys in `/etc/wayan-*.env` (mode 0640, root:wayan); never in git.
 - **Least privilege:** revisit Uran's perm mode (`acceptEdits` today) and sudoers

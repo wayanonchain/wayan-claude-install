@@ -232,6 +232,22 @@ deploy_skills() {
 }
 
 # ----------------------------------------------------------------------------
+# 8c. Day 2 orchestration layer (rules, learnings, memory, mapping, skill-lab).
+#     Copied into each workspace no-clobber; user-edited files are preserved.
+# ----------------------------------------------------------------------------
+deploy_orchestration() {
+  log "Deploying orchestration layer into workspaces ..."
+  local ws
+  for ws in "${JUPITER_WS}" "${URAN_WS}"; do
+    install -d -m 0750 -o "${WAYAN_USER}" -g "${WAYAN_USER}" "${ws}/orchestration"
+    # -n = never overwrite an existing (possibly user-edited) orchestration file.
+    cp -rn "${SRC_DIR}/orchestration/." "${ws}/orchestration/" 2>/dev/null || true
+    chown -R "${WAYAN_USER}:${WAYAN_USER}" "${ws}/orchestration"
+    ok "orchestration ready in ${ws}"
+  done
+}
+
+# ----------------------------------------------------------------------------
 # 9. Env files (created once; never overwritten so secrets survive)
 # ----------------------------------------------------------------------------
 create_env_file() {
@@ -486,6 +502,7 @@ main() {
   create_dirs
   copy_templates
   deploy_skills
+  deploy_orchestration
   create_env_files
   deploy_gateway
   verify_service_dirs
