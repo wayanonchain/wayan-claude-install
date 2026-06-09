@@ -312,11 +312,23 @@ GROQ_MODEL=whisper-large-v3-turbo
 # Seconds to wait for a transcription before giving up.
 VOICE_TIMEOUT=120
 
-# --- file attachments (documents / photos) — v1.1.0 ---
-# Downloaded into <workspace>/uploads/tmp and passed to Claude by path.
+# --- file attachments (documents / photos / audio / video) — v1.1.0 ---
+# Downloaded into <workspace>/uploads/tmp and passed to Claude/Groq.
 FILES_ENABLED=true
-# Reject attachments larger than this (Telegram Bot API caps downloads at 20 MB).
-FILE_MAX_MB=20
+
+# Per-type static size limits (MB). FILE_MAX_MB is the fallback for unknown types.
+FILE_MAX_MB=100
+VIDEO_MAX_MB=250
+AUDIO_MAX_MB=100
+DOCUMENT_MAX_MB=50
+IMAGE_MAX_MB=25
+# Files at/above this size require an explicit "PROCESS FILE" confirmation + disk check.
+LARGE_FILE_CONFIRM_MB=25
+# Disk safety: require (size * multiplier + min-free) MB free before downloading.
+DISK_MIN_FREE_MB=2048
+DISK_REQUIRED_MULTIPLIER=2
+# How long a pending large-upload confirmation stays valid.
+UPLOAD_CONFIRMATION_TIMEOUT_MIN=15
 
 # --- minimal-storage policy (heavy uploads are temporary; knowledge is Markdown) ---
 # Keep raw uploaded files after processing? false = delete once a transcript exists.

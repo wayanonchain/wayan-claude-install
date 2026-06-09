@@ -26,6 +26,20 @@ class EnvDefaultsTests(unittest.TestCase):
         ):
             self.assertIn(line, self.src, f"missing env default: {line}")
 
+    def test_upload_safety_env_defaults_present(self):
+        for line in (
+            "FILE_MAX_MB=100",
+            "VIDEO_MAX_MB=250",
+            "AUDIO_MAX_MB=100",
+            "DOCUMENT_MAX_MB=50",
+            "IMAGE_MAX_MB=25",
+            "LARGE_FILE_CONFIRM_MB=25",
+            "DISK_MIN_FREE_MB=2048",
+            "DISK_REQUIRED_MULTIPLIER=2",
+            "UPLOAD_CONFIRMATION_TIMEOUT_MIN=15",
+        ):
+            self.assertIn(line, self.src, f"missing env default: {line}")
+
     def test_installer_creates_storage_dirs(self):
         self.assertIn("uploads/tmp", self.src)
         self.assertIn("/transcripts", self.src)

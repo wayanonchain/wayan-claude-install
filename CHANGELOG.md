@@ -6,6 +6,18 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased] — v1.1.0-alpha
 
 ### Added
+- **Safe large-upload confirmation flow.** Uploads now pass a two-step gate
+  before download: (1) a per-type static size limit
+  (`VIDEO_MAX_MB`/`AUDIO_MAX_MB`/`DOCUMENT_MAX_MB`/`IMAGE_MAX_MB`, fallback
+  `FILE_MAX_MB`), and (2) a disk-availability check
+  (`size * DISK_REQUIRED_MULTIPLIER + DISK_MIN_FREE_MB` must be free). Files
+  ≥ `LARGE_FILE_CONFIRM_MB` warn the user (type/size/limit/free-disk/est-usage)
+  and wait for a literal `PROCESS FILE` reply; pending state expires after
+  `UPLOAD_CONFIRMATION_TIMEOUT_MIN` and disk is re-checked on confirm. Oversized
+  or disk-short files are rejected without downloading; small files process
+  immediately. Structured logs: `large_upload_pending/confirmed/expired`,
+  `upload_rejected_size/disk`, `upload_processed`. New env keys + STORAGE_POLICY
+  docs (incl. the 20 MB Telegram bot-download limit → send links for big video).
 - **Minimal-storage policy for uploads.** Heavy uploads are temporary; long-term
   knowledge is Markdown. Raw files land in `uploads/tmp/`, are transcribed
   (audio→Groq) or analyzed (documents→Claude) into a Markdown transcript in

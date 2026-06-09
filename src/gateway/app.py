@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 import os
 import re
+import shutil
 import signal
 import time
 from datetime import datetime, timezone
@@ -58,6 +59,158 @@ class Gateway:
         # Raw upload pending post-run handling (transcript + cleanup). Single
         # message in flight at a time, so a single slot is enough.
         self._pending_upload: Optional[dict[str, Any]] = None
+        # Large uploads awaiting an explicit "PROCESS FILE" confirmation, per chat.
+        self._pending_confirmations: dict[int, dict[str, Any]] = {}
+
+    # -- upload-size safety gate ---------------------------------------------
+    def _free_mb(self) -> int:
+        """Free space (MB) on the workspace filesystem."""
+        try:
+            return shutil.disk_usage(self.cfg.workspace).free // (1024 * 1024)
+        except OSError:
+            return 0
+
+    def _type_limit_mb(self, kind: str) -> int:
+        return {
+            "video": self.cfg.video_max_mb,
+            "audio": self.cfg.audio_max_mb,
+            "image": self.cfg.image_max_mb,
+            "document": self.cfg.document_max_mb,
+        }.get(kind, self.cfg.file_max_mb)
+
+    def _required_free_mb(self, size_mb: float) -> int:
+        return int(size_mb * self.cfg.disk_required_multiplier + self.cfg.disk_min_free_mb)
+
+    def _classify_attachment(self, msg: dict[str, Any]) -> Optional[dict[str, Any]]:
+        """Identify a single attachment, its type and size, from a message."""
+        obj = msg.get("video") or msg.get("video_note")
+        kind = "video" if obj else None
+        if not obj:
+            obj = msg.get("voice") or msg.get("audio")
+            kind = "audio" if obj else None
+        if not obj:
+            obj = self._largest_photo(msg.get("photo"))
+            kind = "image" if obj else None
+        if not obj:
+            doc = msg.get("document")
+            if doc:
+                obj = doc
+                mime = doc.get("mime_type") or ""
+                kind = ("video" if mime.startswith("video/")
+                        else "audio" if mime.startswith("audio/")
+                        else "image" if mime.startswith("image/")
+                        else "document")
+        if not obj:
+            return None
+        size = int(obj.get("file_size") or 0)
+        return {
+            "obj": obj,
+            "kind": kind,
+            "size_bytes": size,
+            "size_mb": size / (1024 * 1024),
+            "limit_mb": self._type_limit_mb(kind),
+        }
+
+    @staticmethod
+    def _fmt_disk(mb: int) -> str:
+        return f"{mb / 1024:.0f} GB" if mb >= 1024 else f"{mb} MB"
+
+    def _gate_attachment(self, chat_id: int, att: dict[str, Any], caption: str,
+                         message_id: Any) -> Optional[str]:
+        """Two-step gate: static type limit, then disk availability. Returns a
+        Claude prompt if a (small) file was processed immediately, else None
+        (rejected, or pending PROCESS FILE confirmation)."""
+        if not self.cfg.files_enabled:
+            self.tg.send_message(chat_id, "📎 File handling is disabled for this agent.")
+            return None
+        kind, size_mb, limit = att["kind"], att["size_mb"], att["limit_mb"]
+        size_i = int(round(size_mb))
+
+        # 1) Static type limit — reject oversized BEFORE any download.
+        if size_mb > limit:
+            log.info("upload_rejected_size kind=%s size_mb=%.1f limit=%d chat_id=%s",
+                     kind, size_mb, limit, chat_id)
+            self.tg.send_message(
+                chat_id,
+                f"❌ File too large\n\nType: {kind}\nSize: {size_i} MB\n"
+                f"Limit: {limit} MB\n\nPlease upload a smaller file or provide a link.")
+            return None
+
+        # 7) Small files (< confirm threshold) process immediately.
+        if size_mb < self.cfg.large_file_confirm_mb:
+            return self._process_attachment(chat_id, att, caption, message_id)
+
+        # 2) Disk availability for large-but-allowed files.
+        avail = self._free_mb()
+        required = self._required_free_mb(size_mb)
+        if avail < required:
+            log.info("upload_rejected_disk size_mb=%.1f required=%d avail=%d chat_id=%s",
+                     size_mb, required, avail, chat_id)
+            self.tg.send_message(
+                chat_id,
+                f"❌ Not enough disk space\n\nFile size: {size_i} MB\n"
+                f"Required free space: {required} MB\nAvailable free space: {avail} MB\n\n"
+                "Please free disk space or send a smaller file.")
+            return None
+
+        # 3) Large but allowed: store pending and ask for confirmation.
+        self._pending_confirmations[chat_id] = {
+            "att": att, "caption": caption, "message_id": message_id,
+            "created_at": time.time(),
+        }
+        est = int(round(size_mb * self.cfg.disk_required_multiplier))
+        log.info("large_upload_pending kind=%s size_mb=%.1f chat_id=%s msg_id=%s",
+                 kind, size_mb, chat_id, message_id)
+        self.tg.send_message(
+            chat_id,
+            f"⚠️ Large file detected\n\nType: {kind}\nSize: {size_i} MB\n"
+            f"Limit: {limit} MB\nAvailable disk: {self._fmt_disk(avail)}\n"
+            f"Estimated temporary usage: up to {est} MB\n\n"
+            "Reply with:\nPROCESS FILE\n\nto continue.")
+        return None
+
+    def _confirm_pending(self, chat_id: int) -> Optional[str]:
+        """Handle a 'PROCESS FILE' reply: re-check disk, then download+process."""
+        pend = self._pending_confirmations.pop(chat_id, None)
+        if not pend:
+            self.tg.send_message(chat_id, "No file is awaiting confirmation.")
+            return None
+        if time.time() - pend["created_at"] > self.cfg.upload_confirmation_timeout_min * 60:
+            log.info("large_upload_expired chat_id=%s", chat_id)
+            self.tg.send_message(
+                chat_id, "⏳ Confirmation expired. Please re-send the file.")
+            return None
+
+        att = pend["att"]
+        size_mb = att["size_mb"]
+        avail = self._free_mb()
+        required = self._required_free_mb(size_mb)
+        if avail < required:  # re-check disk after confirmation
+            log.info("upload_rejected_disk (recheck) size_mb=%.1f required=%d avail=%d chat_id=%s",
+                     size_mb, required, avail, chat_id)
+            self.tg.send_message(
+                chat_id,
+                f"❌ Not enough disk space\n\nFile size: {int(round(size_mb))} MB\n"
+                f"Required free space: {required} MB\nAvailable free space: {avail} MB\n\n"
+                "Please free disk space or send a smaller file.")
+            return None
+
+        log.info("large_upload_confirmed kind=%s size_mb=%.1f chat_id=%s",
+                 att["kind"], size_mb, chat_id)
+        return self._process_attachment(
+            chat_id, att, pend["caption"], pend["message_id"])
+
+    def _process_attachment(self, chat_id: int, att: dict[str, Any], caption: str,
+                            message_id: Any) -> Optional[str]:
+        """Download + route an approved attachment; returns a Claude prompt."""
+        kind = att["kind"]
+        if kind in ("audio", "video"):
+            text = self._transcribe_voice(chat_id, att["obj"], message_id)
+        else:  # image / document
+            text = self._handle_file(chat_id, att["obj"], caption, message_id)
+        if text:
+            log.info("upload_processed kind=%s chat_id=%s", kind, chat_id)
+        return text
 
     # -- storage (minimal-storage policy) ------------------------------------
     def _uploads_tmp(self) -> str:
@@ -330,19 +483,22 @@ class Gateway:
         message_id = msg.get("message_id", "")
         self._pending_upload = None
 
-        # File attachment (document or photo) takes priority; caption is the task.
-        attachment = msg.get("document") or self._largest_photo(msg.get("photo"))
-        if attachment:
-            text = self._handle_file(chat_id, attachment, caption, message_id) or ""
-        elif not text:
-            # Voice path: no text and a voice/audio attachment.
-            voice = msg.get("voice") or msg.get("audio")
-            if voice:
-                text = self._transcribe_voice(chat_id, voice, message_id) or ""
-
-        if not text:
-            self._pending_upload = None
-            return
+        # "PROCESS FILE" confirms a previously-gated large upload.
+        if text == "PROCESS FILE":
+            text = self._confirm_pending(chat_id) or ""
+            if not text:
+                self._pending_upload = None
+                return
+        else:
+            # Any attachment goes through the two-step size/disk safety gate.
+            att = self._classify_attachment(msg)
+            if att:
+                text = self._gate_attachment(chat_id, att, caption, message_id) or ""
+                if not text:
+                    self._pending_upload = None
+                    return
+            elif not text:
+                return
 
         if text in ("/start", "/help"):
             self.tg.send_message(

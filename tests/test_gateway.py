@@ -36,6 +36,7 @@ class FakeTelegram:
         self.sent = []
         self.actions = []
         self.docs = []
+        self.get_file_calls = []
         self.file_info = {"file_path": "voice/file_123.oga"}
         self.audio = b"OGG-AUDIO-BYTES"
 
@@ -50,6 +51,7 @@ class FakeTelegram:
         self.actions.append((chat_id, action))
 
     def get_file(self, file_id):
+        self.get_file_calls.append(file_id)
         return self.file_info
 
     def download_file(self, file_path):
@@ -419,6 +421,98 @@ class StorageTests(unittest.TestCase):
         gw._transcribe_voice(1, {"file_id": "f"})
         self.assertEqual([f for f in self._ls("transcripts") if f.endswith(".md")], [])
         self.assertEqual(self._ls("uploads", "tmp"), [])
+
+
+MB = 1024 * 1024
+
+
+class UploadSafetyTests(unittest.TestCase):
+    """Two-step upload gate: static type limit + disk availability + confirm."""
+
+    def setUp(self):
+        self.ws = tempfile.mkdtemp(prefix="wayan-ws-")
+        self._orig_run = appmod.run_claude
+        self._orig_transcribe = appmod.transcribe
+        appmod.run_claude = lambda text, cfg, continue_session: "ok"
+        appmod.transcribe = lambda audio, name, cfg: "transcribed"
+
+    def tearDown(self):
+        appmod.run_claude = self._orig_run
+        appmod.transcribe = self._orig_transcribe
+
+    def _gw(self, free_mb=100000, **over):
+        gw = make_gateway(make_cfg(workspace=self.ws, **over))
+        gw._free_mb = lambda: free_mb
+        return gw
+
+    @staticmethod
+    def _doc(size_mb, name="report.pdf", mime="application/pdf"):
+        return {"file_id": "f", "file_name": name, "mime_type": mime,
+                "file_size": int(size_mb * MB)}
+
+    def test_small_file_processes_immediately(self):
+        gw = self._gw()
+        gw._handle_message({"chat": {"id": 1}, "document": self._doc(2),
+                            "caption": "do it", "message_id": 1})
+        self.assertIn((1, "ok"), gw.tg.sent)                 # processed
+        self.assertEqual(gw.tg.get_file_calls, ["f"])        # downloaded
+        self.assertNotIn(1, gw._pending_confirmations)       # no pending
+
+    def test_large_file_asks_for_confirmation(self):
+        gw = self._gw(free_mb=100000)
+        gw._handle_message({"chat": {"id": 1}, "document": self._doc(30),
+                            "caption": "x", "message_id": 7})
+        self.assertTrue(any("Large file detected" in t for _, t in gw.tg.sent))
+        self.assertIn(1, gw._pending_confirmations)          # pending stored
+        self.assertEqual(gw.tg.get_file_calls, [])           # NOT downloaded
+
+    def test_process_file_continues(self):
+        gw = self._gw(free_mb=100000)
+        gw._handle_message({"chat": {"id": 1}, "document": self._doc(30),
+                            "caption": "x", "message_id": 7})
+        gw._handle_message({"chat": {"id": 1}, "text": "PROCESS FILE",
+                            "message_id": 8})
+        self.assertIn((1, "ok"), gw.tg.sent)                 # processed after confirm
+        self.assertEqual(gw.tg.get_file_calls, ["f"])        # downloaded now
+        self.assertNotIn(1, gw._pending_confirmations)       # cleared
+
+    def test_expired_pending_does_not_process(self):
+        gw = self._gw(free_mb=100000)
+        gw._handle_message({"chat": {"id": 1}, "document": self._doc(30),
+                            "message_id": 7})
+        # age the pending beyond the timeout
+        gw._pending_confirmations[1]["created_at"] -= (
+            gw.cfg.upload_confirmation_timeout_min * 60 + 5)
+        gw._handle_message({"chat": {"id": 1}, "text": "PROCESS FILE"})
+        self.assertTrue(any("expired" in t.lower() for _, t in gw.tg.sent))
+        self.assertEqual(gw.tg.get_file_calls, [])           # never downloaded
+
+    def test_file_above_limit_rejected(self):
+        gw = self._gw()
+        gw._handle_message({"chat": {"id": 1},
+                            "video": {"file_id": "v", "file_size": int(684 * MB)},
+                            "message_id": 9})
+        self.assertTrue(any("File too large" in t for _, t in gw.tg.sent))
+        self.assertEqual(gw.tg.get_file_calls, [])           # not downloaded
+        self.assertNotIn(1, gw._pending_confirmations)
+
+    def test_insufficient_disk_rejected(self):
+        gw = self._gw(free_mb=100)  # far below required for a 30 MB file
+        gw._handle_message({"chat": {"id": 1}, "document": self._doc(30),
+                            "message_id": 7})
+        self.assertTrue(any("Not enough disk space" in t for _, t in gw.tg.sent))
+        self.assertEqual(gw.tg.get_file_calls, [])
+        self.assertNotIn(1, gw._pending_confirmations)
+
+    def test_disk_rechecked_after_confirmation(self):
+        gw = self._gw(free_mb=100000)
+        gw._handle_message({"chat": {"id": 1}, "document": self._doc(30),
+                            "message_id": 7})
+        self.assertIn(1, gw._pending_confirmations)
+        gw._free_mb = lambda: 100  # disk filled up before confirmation
+        gw._handle_message({"chat": {"id": 1}, "text": "PROCESS FILE"})
+        self.assertTrue(any("Not enough disk space" in t for _, t in gw.tg.sent))
+        self.assertEqual(gw.tg.get_file_calls, [])           # blocked on recheck
 
 
 if __name__ == "__main__":

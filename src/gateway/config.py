@@ -41,6 +41,15 @@ class Config:
     transcripts_enabled: bool
     transcripts_dir: str
     uploads_tmp_dir: str
+    # Upload-size safety: per-type static limits + disk availability + confirm flow.
+    video_max_mb: int
+    audio_max_mb: int
+    document_max_mb: int
+    image_max_mb: int
+    large_file_confirm_mb: int
+    disk_min_free_mb: int
+    disk_required_multiplier: int
+    upload_confirmation_timeout_min: int
 
     @property
     def voice_input_ready(self) -> bool:
@@ -108,7 +117,7 @@ def load_config() -> Config:
         voice_output=_get_bool("VOICE_OUTPUT", False),
         voice_timeout=_get_int("VOICE_TIMEOUT", 120),
         files_enabled=_get_bool("FILES_ENABLED", True),
-        file_max_mb=_get_int("FILE_MAX_MB", 20),
+        file_max_mb=_get_int("FILE_MAX_MB", 100),
         file_keep_original=_get_bool("FILE_KEEP_ORIGINAL", False),
         file_retention_hours=_get_int("FILE_RETENTION_HOURS", 24),
         transcripts_enabled=_get_bool("TRANSCRIPTS_ENABLED", True),
@@ -116,4 +125,12 @@ def load_config() -> Config:
         or "transcripts",
         uploads_tmp_dir=os.environ.get("UPLOADS_TMP_DIR", "uploads/tmp").strip()
         or "uploads/tmp",
+        video_max_mb=_get_int("VIDEO_MAX_MB", 250),
+        audio_max_mb=_get_int("AUDIO_MAX_MB", 100),
+        document_max_mb=_get_int("DOCUMENT_MAX_MB", 50),
+        image_max_mb=_get_int("IMAGE_MAX_MB", 25),
+        large_file_confirm_mb=_get_int("LARGE_FILE_CONFIRM_MB", 25),
+        disk_min_free_mb=_get_int("DISK_MIN_FREE_MB", 2048),
+        disk_required_multiplier=_get_int("DISK_REQUIRED_MULTIPLIER", 2),
+        upload_confirmation_timeout_min=_get_int("UPLOAD_CONFIRMATION_TIMEOUT_MIN", 15),
     )
