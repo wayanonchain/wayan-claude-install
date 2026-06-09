@@ -1,0 +1,13 @@
+[Unit]
+Description=Wayan — clean temporary uploads (minimal-storage policy)
+# OPTIONAL and DISABLED BY DEFAULT. The installer does NOT install or enable this.
+# To use it, copy scripts/cleanup-uploads.sh to /usr/local/bin/ and install both
+# this unit and wayan-cleanup.timer, then: systemctl enable --now wayan-cleanup.timer
+# See docs/STORAGE_POLICY.md.
+
+[Service]
+Type=oneshot
+User=wayan
+Group=wayan
+Environment=FILE_RETENTION_HOURS=24
+ExecStart=/usr/local/bin/cleanup-uploads.sh

@@ -1,0 +1,12 @@
+[Unit]
+Description=Wayan — periodic temporary-uploads cleanup (OPTIONAL, disabled by default)
+# The installer does NOT enable this. Enable manually only if you want scheduled
+# cleanup: systemctl enable --now wayan-cleanup.timer  (see docs/STORAGE_POLICY.md)
+
+[Timer]
+OnCalendar=*-*-* 04:00:00
+Persistent=true
+Unit=wayan-cleanup.service
+
+[Install]
+WantedBy=timers.target

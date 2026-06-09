@@ -6,3 +6,13 @@
 # Real account map (copy of accounts.example.md) — never commit
 orchestration/mapping/accounts.md
 **/orchestration/mapping/accounts.md
+
+# Minimal-storage policy — never commit heavy/raw uploads or raw workspace
+# transcripts. Approved Markdown knowledge lives under knowledge/ (committable).
+uploads/
+**/uploads/
+/transcripts/
+
+# Claude credentials — never commit
+**/.credentials.json
+.claude/.credentials.json

@@ -6,6 +6,19 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased] — v1.1.0-alpha
 
 ### Added
+- **Minimal-storage policy for uploads.** Heavy uploads are temporary; long-term
+  knowledge is Markdown. Raw files land in `uploads/tmp/`, are transcribed
+  (audio→Groq) or analyzed (documents→Claude) into a Markdown transcript in
+  `transcripts/` (with metadata: original filename, size, timestamp, agent,
+  Telegram message id, provider/model), then the raw file is deleted unless
+  `FILE_KEEP_ORIGINAL=true`. New env: `FILE_KEEP_ORIGINAL` (false),
+  `FILE_RETENTION_HOURS` (24), `TRANSCRIPTS_ENABLED` (true), `TRANSCRIPTS_DIR`,
+  `UPLOADS_TMP_DIR`. New `scripts/cleanup-uploads.sh` sweeps aged `uploads/tmp`
+  files only (never transcripts/memory/rules/skills/learnings/mapping/env/creds);
+  optional `wayan-cleanup.timer` ships **disabled by default**. Installer creates
+  `uploads/tmp` + `transcripts` per agent. `.gitignore` blocks `uploads/` and
+  root `transcripts/`. Docs: `docs/STORAGE_POLICY.md`. Tests cover env defaults,
+  cleanup safety, transcript creation, and raw-file deletion.
 - **Day 2 orchestration layer.** New `orchestration/` tree copied into each
   workspace: `rules/` (safety, skill-routing, services-map), `learnings/`
   (`inbox/` → `reviewed/`), `memory/` (`hot`/`warm`/`cold`), `mapping/`

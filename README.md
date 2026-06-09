@@ -247,6 +247,14 @@ during a run is delivered back to you as a Telegram document — so you can uplo
 a task as a file and get the result back as a file. Only files created/modified
 in that run are sent.
 
+**Minimal storage.** Raw uploads are **temporary**: they land in
+`<workspace>/uploads/tmp/`, get transcribed/analyzed into a **Markdown
+transcript** in `<workspace>/transcripts/`, then the raw heavy file is deleted
+(unless `FILE_KEEP_ORIGINAL=true`). A manual `scripts/cleanup-uploads.sh` sweeps
+anything left in `uploads/tmp/` older than `FILE_RETENTION_HOURS` (default 24h).
+Transcripts and all knowledge dirs are never swept. Full details:
+[`docs/STORAGE_POLICY.md`](docs/STORAGE_POLICY.md).
+
 ## 14. Skills
 
 Each agent workspace has a `skills/` directory of **read-only playbooks**

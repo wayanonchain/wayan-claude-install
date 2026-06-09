@@ -10,6 +10,7 @@ import os
 import re
 import signal
 import time
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 import requests
@@ -54,6 +55,65 @@ class Gateway:
         # `claude --continue` resumes the most recent session in the workspace,
         # so we only add it once the first turn of this process has succeeded.
         self._session_started = False
+        # Raw upload pending post-run handling (transcript + cleanup). Single
+        # message in flight at a time, so a single slot is enough.
+        self._pending_upload: Optional[dict[str, Any]] = None
+
+    # -- storage (minimal-storage policy) ------------------------------------
+    def _uploads_tmp(self) -> str:
+        return os.path.join(self.cfg.workspace, self.cfg.uploads_tmp_dir)
+
+    def _transcripts_dir(self) -> str:
+        return os.path.join(self.cfg.workspace, self.cfg.transcripts_dir)
+
+    def _write_transcript(self, meta: dict[str, Any], body: str) -> Optional[str]:
+        """Write a Markdown transcript (with metadata) for an uploaded file.
+
+        Markdown is the long-term knowledge format; raw heavy files are not kept.
+        """
+        if not self.cfg.transcripts_enabled:
+            return None
+        tdir = self._transcripts_dir()
+        os.makedirs(tdir, exist_ok=True)
+        stem = os.path.splitext(self._safe_filename(meta.get("filename") or "file"))[0]
+        dest = os.path.join(tdir, f"{stem}.md")
+        lines = [
+            f"# Transcript: {meta.get('filename', '(unknown)')}",
+            "",
+            f"- Original filename: {meta.get('filename', '')}",
+            f"- File size: {meta.get('size', 0)} bytes",
+            f"- Date/time: {meta.get('datetime', '')}",
+            f"- Agent: {self.cfg.agent}",
+            f"- Telegram message id: {meta.get('message_id', '')}",
+            f"- Provider/model: {meta.get('provider', '')}",
+            "",
+            "---",
+            "",
+            (body or "").strip(),
+            "",
+        ]
+        with open(dest, "w") as fh:
+            fh.write("\n".join(lines))
+        log.info("wrote transcript %s", dest)
+        return dest
+
+    def _finalize_upload(self, success: bool, reply: Optional[str]) -> None:
+        """After a file-derived run: persist a Markdown transcript, then drop the
+        raw heavy file unless FILE_KEEP_ORIGINAL is set."""
+        pu = self._pending_upload
+        self._pending_upload = None
+        if not pu:
+            return
+        if success and reply:
+            self._write_transcript(
+                {**pu, "provider": "claude -p (analysis)"}, reply)
+        if not self.cfg.file_keep_original:
+            try:
+                os.remove(pu["raw_path"])
+                log.info("removed raw upload (FILE_KEEP_ORIGINAL=false): %s",
+                         pu["raw_path"])
+            except OSError:
+                pass
 
     # -- lifecycle -----------------------------------------------------------
     def _install_signals(self) -> None:
@@ -70,8 +130,11 @@ class Gateway:
             return True
         return chat_id in self.cfg.allowed_chat_ids
 
-    def _transcribe_voice(self, chat_id: int, voice: dict[str, Any]) -> Optional[str]:
-        """Download a Telegram voice/audio note and transcribe it via Groq.
+    def _transcribe_voice(self, chat_id: int, voice: dict[str, Any],
+                          message_id: Any = "") -> Optional[str]:
+        """Download a Telegram voice/audio note, save it to uploads/tmp, transcribe
+        it via Groq, write a Markdown transcript, then delete the raw heavy file
+        (unless FILE_KEEP_ORIGINAL is set).
 
         Returns the transcript, or None if voice is disabled/failed (in which
         case the user has already been told what happened).
@@ -88,20 +151,49 @@ class Gateway:
             return None
 
         self.tg.send_chat_action(chat_id, "typing")
+        raw_path = None
         try:
             info = self.tg.get_file(file_id)
             file_path = info.get("file_path")
             if not file_path:
                 raise TranscriptionError("Telegram did not return a file_path")
             audio = self.tg.download_file(file_path)
-            filename = os.path.basename(file_path) or "audio.ogg"
+            # Save the heavy file to uploads/tmp (temporary by policy).
+            tmp = self._uploads_tmp()
+            os.makedirs(tmp, exist_ok=True)
+            filename = self._safe_filename(os.path.basename(file_path) or "audio.ogg")
+            raw_path = os.path.join(tmp, filename)
+            with open(raw_path, "wb") as fh:
+                fh.write(audio)
             transcript = transcribe(audio, filename, self.cfg)
         except (TelegramError, TranscriptionError, requests.RequestException) as exc:
             log.error("voice transcription failed: %s", exc)
             self.tg.send_message(chat_id, f"⚠️ Voice transcription failed: {exc}")
+            if raw_path:  # don't leave a half-processed heavy file around
+                try:
+                    if not self.cfg.file_keep_original:
+                        os.remove(raw_path)
+                except OSError:
+                    pass
             return None
 
         log.info("transcribed voice from chat_id=%s (%d chars)", chat_id, len(transcript))
+        # Long-term knowledge as Markdown.
+        self._write_transcript({
+            "filename": os.path.basename(file_path),
+            "size": len(audio),
+            "datetime": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "message_id": message_id,
+            "provider": f"groq:{self.cfg.groq_model}",
+        }, transcript)
+        # Drop the raw heavy file unless explicitly kept.
+        if not self.cfg.file_keep_original:
+            try:
+                os.remove(raw_path)
+                log.info("removed raw audio (FILE_KEEP_ORIGINAL=false): %s", raw_path)
+            except OSError:
+                pass
+
         # Echo what we understood so the user can confirm/correct.
         self.tg.send_message(chat_id, f"📝 {transcript}")
         return transcript
@@ -169,8 +261,12 @@ class Gateway:
         return f"{int(time.time())}_{base}"
 
     def _handle_file(self, chat_id: int, attachment: dict[str, Any],
-                     caption: str) -> Optional[str]:
-        """Download a document/photo into the workspace and build a Claude prompt."""
+                     caption: str, message_id: Any = "") -> Optional[str]:
+        """Download a document/photo into uploads/tmp and build a Claude prompt.
+
+        The raw file is temporary: after the run, a Markdown transcript is written
+        and the raw file is deleted unless FILE_KEEP_ORIGINAL is set
+        (see _finalize_upload)."""
         if not self.cfg.files_enabled:
             self.tg.send_message(chat_id, "📎 File handling is disabled for this agent.")
             return None
@@ -199,12 +295,21 @@ class Gateway:
 
         raw_name = attachment.get("file_name") or os.path.basename(file_path)
         safe = self._safe_filename(raw_name)
-        uploads = os.path.join(self.cfg.workspace, "uploads")
+        uploads = self._uploads_tmp()
         os.makedirs(uploads, exist_ok=True)
         dest = os.path.join(uploads, safe)
         with open(dest, "wb") as fh:
             fh.write(data)
         log.info("saved upload from chat_id=%s -> %s (%d bytes)", chat_id, dest, len(data))
+
+        # Remember it so _finalize_upload can transcript + clean up after the run.
+        self._pending_upload = {
+            "raw_path": dest,
+            "filename": raw_name,
+            "size": len(data),
+            "datetime": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "message_id": message_id,
+        }
 
         self.tg.send_message(chat_id, f"📎 Файл получен: {safe}")
         prompt = self._file_prompt(caption, os.path.abspath(dest))
@@ -222,18 +327,21 @@ class Gateway:
 
         text = (msg.get("text") or "").strip()
         caption = (msg.get("caption") or "").strip()
+        message_id = msg.get("message_id", "")
+        self._pending_upload = None
 
         # File attachment (document or photo) takes priority; caption is the task.
         attachment = msg.get("document") or self._largest_photo(msg.get("photo"))
         if attachment:
-            text = self._handle_file(chat_id, attachment, caption) or ""
+            text = self._handle_file(chat_id, attachment, caption, message_id) or ""
         elif not text:
             # Voice path: no text and a voice/audio attachment.
             voice = msg.get("voice") or msg.get("audio")
             if voice:
-                text = self._transcribe_voice(chat_id, voice) or ""
+                text = self._transcribe_voice(chat_id, voice, message_id) or ""
 
         if not text:
+            self._pending_upload = None
             return
 
         if text in ("/start", "/help"):
@@ -258,11 +366,14 @@ class Gateway:
         except ClaudeError as exc:
             log.error("claude error: %s", exc)
             self.tg.send_message(chat_id, f"⚠️ Claude error: {exc}")
+            self._finalize_upload(success=False, reply=None)
             return
         reply = reply or "(no output)"
         self.tg.send_message(chat_id, reply)
         log.info("reply sent to chat_id=%s (%d chars)", chat_id, len(reply))
         self._deliver_outbox(chat_id, outbox, before)
+        # Persist a Markdown transcript of the analysis and drop the raw upload.
+        self._finalize_upload(success=True, reply=reply)
 
     # -- main loop -----------------------------------------------------------
     def run(self) -> None:

@@ -35,6 +35,12 @@ class Config:
     # File attachments (documents / photos) downloaded into the workspace.
     files_enabled: bool
     file_max_mb: int
+    # Minimal-storage policy: heavy uploads are temporary; knowledge is Markdown.
+    file_keep_original: bool
+    file_retention_hours: int
+    transcripts_enabled: bool
+    transcripts_dir: str
+    uploads_tmp_dir: str
 
     @property
     def voice_input_ready(self) -> bool:
@@ -103,4 +109,11 @@ def load_config() -> Config:
         voice_timeout=_get_int("VOICE_TIMEOUT", 120),
         files_enabled=_get_bool("FILES_ENABLED", True),
         file_max_mb=_get_int("FILE_MAX_MB", 20),
+        file_keep_original=_get_bool("FILE_KEEP_ORIGINAL", False),
+        file_retention_hours=_get_int("FILE_RETENTION_HOURS", 24),
+        transcripts_enabled=_get_bool("TRANSCRIPTS_ENABLED", True),
+        transcripts_dir=os.environ.get("TRANSCRIPTS_DIR", "transcripts").strip()
+        or "transcripts",
+        uploads_tmp_dir=os.environ.get("UPLOADS_TMP_DIR", "uploads/tmp").strip()
+        or "uploads/tmp",
     )

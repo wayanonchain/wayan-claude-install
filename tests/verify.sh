@@ -51,6 +51,9 @@ for ws in /home/wayan/.claude-lab/jupiter /home/wayan/.claude-lab/uran; do
   check_exists "$ws/orchestration/memory/cold.md"
   check_exists "$ws/orchestration/mapping/infrastructure.md"
   check_exists "$ws/orchestration/skill-lab/proposals"
+  # Minimal-storage policy
+  check_exists "$ws/uploads/tmp"
+  check_exists "$ws/transcripts"
 done
 check_exists /opt/wayan-jupiter
 check_exists /opt/wayan-uran

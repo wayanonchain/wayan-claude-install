@@ -150,6 +150,7 @@ class GroqUploadFilenameTests(unittest.TestCase):
 
 class VoiceRoutingTests(unittest.TestCase):
     def setUp(self):
+        self.ws = tempfile.mkdtemp(prefix="wayan-ws-")
         self._orig_transcribe = appmod.transcribe
         self._orig_run = appmod.run_claude
 
@@ -157,19 +158,22 @@ class VoiceRoutingTests(unittest.TestCase):
         appmod.transcribe = self._orig_transcribe
         appmod.run_claude = self._orig_run
 
+    def _cfg(self, **over):
+        return make_cfg(workspace=self.ws, **over)
+
     def test_voice_disabled(self):
-        gw = make_gateway(make_cfg(voice_enabled=False, groq_api_key="k"))
+        gw = make_gateway(self._cfg(voice_enabled=False, groq_api_key="k"))
         self.assertIsNone(gw._transcribe_voice(1, {"file_id": "f"}))
         self.assertTrue(any("disabled" in t for _, t in gw.tg.sent))
 
     def test_voice_no_key(self):
-        gw = make_gateway(make_cfg(groq_api_key=""))
+        gw = make_gateway(self._cfg(groq_api_key=""))
         self.assertIsNone(gw._transcribe_voice(1, {"file_id": "f"}))
         self.assertTrue(any("GROQ_API_KEY" in t for _, t in gw.tg.sent))
 
     def test_voice_happy_path(self):
         appmod.transcribe = lambda audio, name, cfg: "hello world"
-        gw = make_gateway(make_cfg(groq_api_key="k"))
+        gw = make_gateway(self._cfg(groq_api_key="k"))
         result = gw._transcribe_voice(1, {"file_id": "f"})
         self.assertEqual(result, "hello world")
         self.assertTrue(any("hello world" in t for _, t in gw.tg.sent))  # echoed
@@ -183,7 +187,7 @@ class VoiceRoutingTests(unittest.TestCase):
 
         appmod.transcribe = lambda audio, name, cfg: "do the thing"
         appmod.run_claude = fake_run
-        gw = make_gateway(make_cfg(groq_api_key="k"))
+        gw = make_gateway(self._cfg(groq_api_key="k"))
         gw._handle_message({"chat": {"id": 1}, "voice": {"file_id": "f"}})
         self.assertEqual(captured["prompt"], "do the thing")
         self.assertIn((1, "done"), gw.tg.sent)
@@ -196,7 +200,7 @@ class VoiceRoutingTests(unittest.TestCase):
             return "ok"
 
         appmod.run_claude = fake_run
-        gw = make_gateway(make_cfg())
+        gw = make_gateway(self._cfg())
         gw._handle_message({"chat": {"id": 1}, "text": "hi there"})
         self.assertEqual(captured["prompt"], "hi there")
         self.assertIn((1, "ok"), gw.tg.sent)
@@ -230,8 +234,8 @@ class FileHandlingTests(unittest.TestCase):
         gw.tg.file_info = {"file_path": "documents/report.pdf"}
         prompt = gw._handle_file(
             1, {"file_id": "f", "file_name": "report.pdf"}, "Проверь отчёт")
-        # file written into <workspace>/uploads
-        uploads = os.path.join(self.ws, "uploads")
+        # file written into <workspace>/uploads/tmp
+        uploads = os.path.join(self.ws, "uploads", "tmp")
         files = os.listdir(uploads)
         self.assertEqual(len(files), 1)
         self.assertTrue(files[0].endswith("report.pdf"))
@@ -257,7 +261,7 @@ class FileHandlingTests(unittest.TestCase):
         self.assertIn("Only after reading the file, complete the requested task.", prompt)
         self.assertIn("If the file cannot be read, explain why.", prompt)
         # absolute path present
-        uploads = os.path.join(self.ws, "uploads")
+        uploads = os.path.join(self.ws, "uploads", "tmp")
         self.assertTrue(any(uploads in line and line.endswith(".pdf")
                             for line in prompt.splitlines()))
 
@@ -347,6 +351,74 @@ class OutboxDeliveryTests(unittest.TestCase):
         self.assertIn("do it", captured["prompt"])
         self.assertIn("uploads", captured["prompt"])
         self.assertIn((1, "ok"), gw.tg.sent)
+
+
+class StorageTests(unittest.TestCase):
+    """Minimal-storage policy: temporary raw uploads, Markdown transcripts."""
+
+    def setUp(self):
+        self.ws = tempfile.mkdtemp(prefix="wayan-ws-")
+        self._orig_transcribe = appmod.transcribe
+        self._orig_run = appmod.run_claude
+
+    def tearDown(self):
+        appmod.transcribe = self._orig_transcribe
+        appmod.run_claude = self._orig_run
+
+    def _ls(self, *parts):
+        d = os.path.join(self.ws, *parts)
+        return os.listdir(d) if os.path.isdir(d) else []
+
+    def _read_only_md(self, subdir="transcripts"):
+        d = os.path.join(self.ws, subdir)
+        mds = [f for f in os.listdir(d) if f.endswith(".md")] if os.path.isdir(d) else []
+        self.assertEqual(len(mds), 1, f"expected exactly one .md in {subdir}, got {mds}")
+        with open(os.path.join(d, mds[0]), encoding="utf-8") as fh:
+            return fh.read()
+
+    def test_voice_writes_transcript_and_deletes_raw(self):
+        appmod.transcribe = lambda audio, name, cfg: "hello from voice"
+        gw = make_gateway(make_cfg(workspace=self.ws, groq_api_key="k",
+                                   file_keep_original=False))
+        out = gw._transcribe_voice(1, {"file_id": "f"}, message_id=42)
+        self.assertEqual(out, "hello from voice")
+        body = self._read_only_md()
+        self.assertIn("hello from voice", body)
+        self.assertIn("Telegram message id: 42", body)
+        self.assertIn("Provider/model: groq:", body)
+        self.assertIn("Agent: jupiter", body)
+        self.assertEqual(self._ls("uploads", "tmp"), [])  # raw deleted
+
+    def test_voice_keep_original_retains_raw(self):
+        appmod.transcribe = lambda audio, name, cfg: "kept"
+        gw = make_gateway(make_cfg(workspace=self.ws, groq_api_key="k",
+                                   file_keep_original=True))
+        gw._transcribe_voice(1, {"file_id": "f"}, message_id=1)
+        self.assertEqual(len(self._ls("uploads", "tmp")), 1)  # raw kept
+
+    def test_document_writes_transcript_and_deletes_raw(self):
+        appmod.run_claude = lambda text, cfg, continue_session: "doc analysis result"
+        gw = make_gateway(make_cfg(workspace=self.ws, file_keep_original=False))
+        gw._handle_message({
+            "chat": {"id": 5},
+            "document": {"file_id": "f", "file_name": "report.pdf"},
+            "caption": "summarize",
+            "message_id": 99,
+        })
+        body = self._read_only_md()
+        self.assertIn("doc analysis result", body)
+        self.assertIn("claude -p", body)
+        self.assertIn("report.pdf", body)
+        self.assertEqual(self._ls("uploads", "tmp"), [])  # raw deleted
+
+    def test_transcripts_disabled_still_deletes_raw(self):
+        appmod.transcribe = lambda audio, name, cfg: "x"
+        gw = make_gateway(make_cfg(workspace=self.ws, groq_api_key="k",
+                                   transcripts_enabled=False,
+                                   file_keep_original=False))
+        gw._transcribe_voice(1, {"file_id": "f"})
+        self.assertEqual([f for f in self._ls("transcripts") if f.endswith(".md")], [])
+        self.assertEqual(self._ls("uploads", "tmp"), [])
 
 
 if __name__ == "__main__":

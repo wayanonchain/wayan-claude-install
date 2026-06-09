@@ -187,8 +187,15 @@ create_dirs() {
   install -d -m 0700 -o "${WAYAN_USER}" -g "${WAYAN_USER}" "${WAYAN_HOME}/.config"
   install -d -m 0700 -o "${WAYAN_USER}" -g "${WAYAN_USER}" "${WAYAN_HOME}/.cache"
   install -d -m 0700 -o "${WAYAN_USER}" -g "${WAYAN_USER}" "${WAYAN_HOME}/.claude"
+  # Minimal-storage policy: temporary uploads + long-term Markdown transcripts.
+  local ws
+  for ws in "${JUPITER_WS}" "${URAN_WS}"; do
+    install -d -m 0750 -o "${WAYAN_USER}" -g "${WAYAN_USER}" "${ws}/uploads/tmp"
+    install -d -m 0750 -o "${WAYAN_USER}" -g "${WAYAN_USER}" "${ws}/transcripts"
+  done
   ok "Workspaces ready: ${JUPITER_WS}, ${URAN_WS}"
   ok "Home dirs ready: ${WAYAN_HOME}/.config, ${WAYAN_HOME}/.cache, ${WAYAN_HOME}/.claude"
+  ok "Storage dirs ready: <ws>/uploads/tmp, <ws>/transcripts"
 }
 
 # ----------------------------------------------------------------------------
@@ -306,10 +313,22 @@ GROQ_MODEL=whisper-large-v3-turbo
 VOICE_TIMEOUT=120
 
 # --- file attachments (documents / photos) — v1.1.0 ---
-# Downloaded into <workspace>/uploads and passed to Claude by path.
+# Downloaded into <workspace>/uploads/tmp and passed to Claude by path.
 FILES_ENABLED=true
 # Reject attachments larger than this (Telegram Bot API caps downloads at 20 MB).
 FILE_MAX_MB=20
+
+# --- minimal-storage policy (heavy uploads are temporary; knowledge is Markdown) ---
+# Keep raw uploaded files after processing? false = delete once a transcript exists.
+FILE_KEEP_ORIGINAL=false
+# How long the cleanup script keeps files in uploads/tmp before deleting them.
+FILE_RETENTION_HOURS=24
+# Write a Markdown transcript (with metadata) for each uploaded/transcribed file.
+TRANSCRIPTS_ENABLED=true
+# Workspace-relative directory for long-term Markdown transcripts.
+TRANSCRIPTS_DIR=transcripts
+# Workspace-relative directory for temporary raw uploads.
+UPLOADS_TMP_DIR=uploads/tmp
 EOF
   chown root:"${WAYAN_USER}" "${path}"
   chmod 0640 "${path}"

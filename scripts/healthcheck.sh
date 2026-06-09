@@ -56,6 +56,12 @@ for ws in "${LAB_DIR}/jupiter" "${LAB_DIR}/uran"; do
   done
 done
 
+hdr "Storage policy"
+for ws in "${LAB_DIR}/jupiter" "${LAB_DIR}/uran"; do
+  [[ -d "${ws}/uploads/tmp" ]] && ok "uploads/tmp: ${ws}" || bad "uploads/tmp missing: ${ws}"
+  [[ -d "${ws}/transcripts" ]] && ok "transcripts: ${ws}" || bad "transcripts missing: ${ws}"
+done
+
 hdr "Gateway deployment"
 for opt in /opt/wayan-jupiter /opt/wayan-uran; do
   [[ -x "${opt}/venv/bin/python" ]] && ok "venv: ${opt}/venv" || bad "missing venv: ${opt}/venv"

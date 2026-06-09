@@ -44,6 +44,12 @@ GitHub, VPS, Telegram, Groq, or external tools.
 A staging area for **new** skill ideas (`proposals/`). Nothing here is active;
 promotion into `skills/` is a deliberate, approved step.
 
+### `uploads/tmp/` + `transcripts/` — minimal storage
+Heavy uploads are temporary (`uploads/tmp/`), turned into Markdown
+(`transcripts/`), then deleted. Knowledge is text, not raw media. This is the
+same "knowledge lives in files, as Markdown" principle applied to user uploads.
+See [`STORAGE_POLICY.md`](STORAGE_POLICY.md).
+
 ---
 
 ## Why auto-fix is disabled by default
