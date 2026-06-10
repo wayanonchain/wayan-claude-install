@@ -255,6 +255,19 @@ deploy_orchestration() {
 }
 
 # ----------------------------------------------------------------------------
+# 8d. Role-based permission profiles (.claude/settings.json) per agent.
+#     No-clobber: never overwrite a settings.json the operator has edited.
+#     (Use scripts/apply-templates.sh to update them with a backup.)
+# ----------------------------------------------------------------------------
+deploy_agent_settings() {
+  log "Deploying agent permission profiles (.claude/settings.json) ..."
+  install -d -m 0700 -o "${WAYAN_USER}" -g "${WAYAN_USER}" "${JUPITER_WS}/.claude"
+  install -d -m 0700 -o "${WAYAN_USER}" -g "${WAYAN_USER}" "${URAN_WS}/.claude"
+  copy_template "${SRC_DIR}/templates/jupiter/claude-settings.json" "${JUPITER_WS}/.claude/settings.json"
+  copy_template "${SRC_DIR}/templates/uran/claude-settings.json"    "${URAN_WS}/.claude/settings.json"
+}
+
+# ----------------------------------------------------------------------------
 # 9. Env files (created once; never overwritten so secrets survive)
 # ----------------------------------------------------------------------------
 create_env_file() {
@@ -546,6 +559,7 @@ main() {
   copy_templates
   deploy_skills
   deploy_orchestration
+  deploy_agent_settings
   create_env_files
   deploy_gateway
   verify_service_dirs

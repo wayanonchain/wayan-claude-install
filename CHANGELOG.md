@@ -6,6 +6,17 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased] — v1.1.0-alpha
 
 ### Added
+- **Role-based agent permission profiles (persistent).** Per-agent
+  `templates/<agent>/claude-settings.json` deployed to
+  `<workspace>/.claude/settings.json`: read-only diagnostics + research + git
+  inspect + the OpenViking memory MCP tools are allow-listed; dangerous ops
+  (git push, ssh, sudo, rm, chmod/chown, service stop/disable, docker down, apt,
+  reboot/shutdown, …) are gated; and `deny` rules enforce **no self-editing** of
+  `CLAUDE.md`/`USER.md`/`rules`/`memory`/`mapping`/`skills`. Uran also allows
+  scoped service restarts + `docker compose restart openviking`. Installer
+  deploys them no-clobber; `apply-templates.sh` updates them with a timestamped
+  backup. Docs: `docs/PERMISSIONS.md`. Never touches env files, `ov.conf`, or
+  keys.
 - **Safe link ingestion for large files.** Since Telegram bots can't download
   files over ~20 MB, large media is ingested from a URL instead. Direct file
   URLs (`.mp4/.mov/.m4a/.mp3/.wav/.ogg/.webm/.pdf/.txt/.csv`) are `HEAD`-probed,

@@ -6,9 +6,10 @@
 # CLAUDE.md. This script is the *explicit* path to push updated CLAUDE.md from
 # the repo templates into the live workspaces, with a timestamped backup.
 #
-# - Backs up each existing CLAUDE.md -> CLAUDE.md.bak.<timestamp>
-# - Overwrites CLAUDE.md from templates/<agent>/CLAUDE.md
-# - Does NOT touch USER.md, env files, skills, or Claude credentials.
+# - Backs up each existing CLAUDE.md -> CLAUDE.md.bak.<timestamp>, applies template
+# - Backs up each existing .claude/settings.json -> settings.json.bak.<timestamp>,
+#   applies the role-based permission profile from templates/<agent>/claude-settings.json
+# - Does NOT touch USER.md, env files, skills, ov.conf, or any API keys/credentials.
 #
 # Usage:
 #   sudo bash scripts/apply-templates.sh
@@ -68,19 +69,46 @@ apply_one() {
   # USER.md is intentionally left untouched.
 }
 
+apply_settings() {
+  local agent="$1"
+  local src="${SRC_DIR}/templates/${agent}/claude-settings.json"
+  local ws="${LAB_DIR}/${agent}"
+  local dst="${ws}/.claude/settings.json"
+
+  [[ -f "${src}" ]] || die "settings template not found: ${src}"
+  [[ -d "${ws}" ]]  || { warn "workspace missing, skipping: ${ws}"; return; }
+
+  install -d -m 0700 -o "${WAYAN_USER}" -g "${WAYAN_USER}" "${ws}/.claude"
+  if [[ -f "${dst}" ]]; then
+    local backup="${dst}.bak.$(date +%Y%m%d-%H%M%S)"
+    cp -p "${dst}" "${backup}"
+    chown "${WAYAN_USER}:${WAYAN_USER}" "${backup}"
+    ok "backed up ${dst} -> ${backup}"
+  fi
+  install -m 0600 -o "${WAYAN_USER}" -g "${WAYAN_USER}" "${src}" "${dst}"
+  ok "applied permission profile -> ${dst}"
+}
+
 log "Applying CLAUDE.md template updates (USER.md untouched) ..."
 apply_one jupiter
 apply_one uran
 
+log "Applying role-based permission profiles (.claude/settings.json) ..."
+apply_settings jupiter
+apply_settings uran
+
 log "Verifying ..."
 for agent in jupiter uran; do
   dst="${LAB_DIR}/${agent}/CLAUDE.md"
-  if grep -q "## Skills Usage" "${dst}" 2>/dev/null; then
-    ok "${dst} contains '## Skills Usage'"
+  grep -q "## Skills Usage" "${dst}" 2>/dev/null \
+    && ok "${dst} contains '## Skills Usage'" || warn "${dst} missing '## Skills Usage'"
+  s="${LAB_DIR}/${agent}/.claude/settings.json"
+  if python3 -c "import json,sys; d=json.load(open('${s}')); sys.exit(0 if any('memory_store' in a for a in d['permissions']['allow']) else 1)" 2>/dev/null; then
+    ok "${s} valid + memory tools allow-listed"
   else
-    warn "${dst} missing '## Skills Usage'"
+    warn "${s} missing/invalid or memory tools not allow-listed"
   fi
 done
 
-ok "Done. Backups: ${LAB_DIR}/<agent>/CLAUDE.md.bak.<timestamp>"
-ok "Restart not required — Claude reads CLAUDE.md fresh on each task."
+ok "Done. Backups: ${LAB_DIR}/<agent>/{CLAUDE.md,.claude/settings.json}.bak.<timestamp>"
+ok "Restart not required — Claude reads these fresh on each task."

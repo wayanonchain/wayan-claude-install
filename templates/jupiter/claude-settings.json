@@ -1,0 +1,61 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "WebFetch",
+      "Bash(curl:*)",
+      "Bash(python3:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(uptime)",
+      "Bash(df:*)",
+      "Bash(free:*)",
+      "Bash(ps:*)",
+      "Bash(systemctl status:*)",
+      "Bash(journalctl:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "mcp__plugin_openviking-memory_openviking-memory__memory_health",
+      "mcp__plugin_openviking-memory_openviking-memory__memory_store",
+      "mcp__plugin_openviking-memory_openviking-memory__memory_recall",
+      "mcp__plugin_openviking-memory_openviking-memory__memory_forget"
+    ],
+    "ask": [
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(gh:*)",
+      "Bash(ssh:*)",
+      "Bash(sudo:*)",
+      "Bash(rm:*)",
+      "Bash(chmod:*)",
+      "Bash(chown:*)",
+      "Bash(systemctl restart:*)",
+      "Bash(systemctl stop:*)",
+      "Bash(systemctl disable:*)",
+      "Bash(docker compose up:*)",
+      "Bash(docker compose down:*)",
+      "Bash(docker compose restart:*)",
+      "Bash(apt:*)",
+      "Bash(apt-get:*)",
+      "Bash(reboot:*)",
+      "Bash(shutdown:*)"
+    ],
+    "deny": [
+      "Edit(/home/wayan/.claude-lab/jupiter/CLAUDE.md)",
+      "Write(/home/wayan/.claude-lab/jupiter/CLAUDE.md)",
+      "Edit(/home/wayan/.claude-lab/jupiter/USER.md)",
+      "Write(/home/wayan/.claude-lab/jupiter/USER.md)",
+      "Edit(/home/wayan/.claude-lab/jupiter/orchestration/rules/**)",
+      "Write(/home/wayan/.claude-lab/jupiter/orchestration/rules/**)",
+      "Edit(/home/wayan/.claude-lab/jupiter/orchestration/memory/**)",
+      "Write(/home/wayan/.claude-lab/jupiter/orchestration/memory/**)",
+      "Edit(/home/wayan/.claude-lab/jupiter/orchestration/mapping/**)",
+      "Write(/home/wayan/.claude-lab/jupiter/orchestration/mapping/**)",
+      "Edit(/home/wayan/.claude-lab/jupiter/skills/**)",
+      "Write(/home/wayan/.claude-lab/jupiter/skills/**)"
+    ]
+  }
+}
