@@ -6,6 +6,13 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased] — v1.1.0-alpha
 
 ### Added
+- **Public-template & beginner docs.** New `docs/MAC_SETUP.md` (control-machine
+  model, SSH keys, `~/.ssh/config`, Remote-SSH), `docs/PUBLIC_TEMPLATE_GUIDE.md`
+  (fork & customize; never-commit list), `docs/COSTS_AND_SERVICES.md` (services +
+  official pricing links), `docs/TERMS_GLOSSARY.md` (plain-English terms). README
+  gains a *Getting started* section (installation paths A/B/C + 9-step beginner
+  flow + docs index). Removed a hardcoded server IP default from
+  `export-knowledge.sh` (now requires `WAYAN_VPS`) for public-template safety.
 - **Role-based agent permission profiles (persistent).** Per-agent
   `templates/<agent>/claude-settings.json` deployed to
   `<workspace>/.claude/settings.json`: read-only diagnostics + research + git

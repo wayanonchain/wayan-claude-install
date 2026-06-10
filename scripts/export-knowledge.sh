@@ -24,7 +24,8 @@
 #
 set -euo pipefail
 
-VPS="${WAYAN_VPS:-root@136.244.91.3}"
+# Set WAYAN_VPS to your server, e.g.  WAYAN_VPS=root@your-server-ip bash scripts/export-knowledge.sh
+VPS="${WAYAN_VPS:-}"
 SSH_OPTS=(-o ConnectTimeout=20)
 AGENTS=(jupiter uran)
 
@@ -87,6 +88,7 @@ pull_one() {
 main() {
   command -v ssh >/dev/null || die "ssh not found."
   command -v tar >/dev/null || die "tar not found."
+  [[ -n "${VPS}" ]] || die "Set WAYAN_VPS to your server, e.g. WAYAN_VPS=root@your-server-ip bash scripts/export-knowledge.sh"
   log "Exporting approved knowledge from ${VPS} ..."
   log "Whitelist only; uploads/, .claude/, env files and secrets are never exported."
 

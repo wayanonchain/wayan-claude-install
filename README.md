@@ -6,6 +6,59 @@ an Ubuntu VPS, following the EdgeLab "Day 1" methodology.
 > This is an independent installer. It is **not** tied to any previous
 > `wayan_pirat_bot` setup.
 
+> **New here?** Start with [Terms Glossary](docs/TERMS_GLOSSARY.md) and
+> [Costs & Services](docs/COSTS_AND_SERVICES.md), then come back to *Getting
+> started* below.
+
+---
+
+## Getting started
+
+The agents run on an **Ubuntu VPS** (a rented Linux server), **not** on your
+laptop. You install and operate them over SSH.
+
+### Installation paths
+
+- **A. Mac user → VPS install (recommended for beginners).** Use your Mac to
+  connect to a fresh VPS and run the installer there. Full walkthrough:
+  [docs/MAC_SETUP.md](docs/MAC_SETUP.md), then the beginner flow below. *(Windows/
+  Linux desktops work the same way — you just need `git` + `ssh`.)*
+- **B. Direct VPS install.** Already on an Ubuntu VPS? Skip the Mac steps and run
+  the installer one-liner in [§6](#6-install-on-the-vps).
+- **C. Fork & customize this repo.** Want your own branded agents? Fork it and
+  adapt the templates/skills/mapping: [docs/PUBLIC_TEMPLATE_GUIDE.md](docs/PUBLIC_TEMPLATE_GUIDE.md).
+
+### Beginner flow (path A)
+
+1. **Create accounts:** GitHub, Telegram, Anthropic (Claude), Groq, OpenAI — see
+   [Costs & Services](docs/COSTS_AND_SERVICES.md).
+2. **Create a VPS** (Ubuntu 22.04/24.04, 2 GB RAM recommended). Note its IP +
+   root password.
+3. **Connect from your Mac:** [docs/MAC_SETUP.md](docs/MAC_SETUP.md)
+   (`ssh root@SERVER_IP`).
+4. **Run the installer** on the VPS ([§6](#6-install-on-the-vps)).
+5. **Log in to Claude** as the `wayan` user ([§7](#7-authorize-claude-code)).
+6. **Add Telegram bot tokens** ([§8](#8-telegram-bot-token--jupiter), [§9](#9-telegram-bot-token--uran)).
+7. **Add your Groq key** for voice ([§13](#13-voice-input-groq--v110)).
+8. **Add OpenViking memory** (optional but recommended):
+   [docs/OPENVIKING_MEMORY.md](docs/OPENVIKING_MEMORY.md).
+9. **Test Jupiter & Uran** — message the bots; run `scripts/healthcheck.sh`
+   ([§10](#10-verify)).
+
+### Documentation index
+
+| Doc | What it covers |
+| --- | --- |
+| [MAC_SETUP.md](docs/MAC_SETUP.md) | Connect from a Mac (SSH keys, `~/.ssh/config`, Remote-SSH) |
+| [COSTS_AND_SERVICES.md](docs/COSTS_AND_SERVICES.md) | What you need and roughly what it costs |
+| [TERMS_GLOSSARY.md](docs/TERMS_GLOSSARY.md) | Plain-English definitions (SSH, VPS, API key, …) |
+| [PUBLIC_TEMPLATE_GUIDE.md](docs/PUBLIC_TEMPLATE_GUIDE.md) | Fork & customize; what to never commit |
+| [DAY2_ORCHESTRATION.md](docs/DAY2_ORCHESTRATION.md) | Rules / learnings / memory / mapping / skill-lab |
+| [PERMISSIONS.md](docs/PERMISSIONS.md) | Role-based agent permission profiles |
+| [STORAGE_POLICY.md](docs/STORAGE_POLICY.md) | Minimal storage, uploads, transcripts, large links |
+| [OPENVIKING_MEMORY.md](docs/OPENVIKING_MEMORY.md) | Long-term semantic memory |
+| [KNOWLEDGE_EXPORT.md](docs/KNOWLEDGE_EXPORT.md) | Exporting approved Markdown knowledge to Git |
+
 ---
 
 ## 1. What we install
