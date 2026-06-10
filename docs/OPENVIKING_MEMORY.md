@@ -46,6 +46,40 @@ VPS (localhost only)
 
 ---
 
+## Deployed configuration (as built)
+
+The working setup on the VPS:
+
+- **Compose:** a single `openviking` service (the optional `caddy` proxy was
+  removed — unneeded for localhost-only access and it required a missing
+  `Caddyfile`).
+- **Port:** `127.0.0.1:1933:1933` only — never `0.0.0.0`, no firewall ports.
+- **Auth:** `api_key` mode. The container's entrypoint binds `0.0.0.0` *inside*
+  the container (required for Docker's localhost port-forward to reach it); the
+  dev-mode guard then requires authentication, so a **`server` section** is
+  added to `ov.conf`:
+
+  ```json
+  "server": {
+    "auth_mode": "api_key",
+    "root_api_key": "<256-bit local key — NEVER committed>"
+  }
+  ```
+
+  Setting a non-empty `root_api_key` auto-selects `api_key` mode. The key is a
+  local random secret (`secrets.token_hex(32)`), stored only in `ov.conf` and a
+  `600 wayan:wayan` copy at `/home/wayan/.openviking/root_api_key`. It is never
+  printed (only `first6…last4`), never committed.
+- **`/health`** is unauthenticated (used by the container healthcheck); all
+  other endpoints require the `root_api_key`.
+- **Data:** `/home/wayan/.openviking/data`; **config:** `/home/wayan/.openviking/ov.conf`.
+
+> Security: `ov.conf` and `root_api_key` are `600 wayan:wayan`. `.gitignore`
+> blocks `.openviking/`, `ov.conf`, and `**/ov.conf`, so neither the OpenAI key
+> nor the OpenViking server key can be committed.
+
+---
+
 ## Where memory is stored
 
 | Layer | Lives in | Role |
