@@ -16,3 +16,11 @@ uploads/
 # Claude credentials — never commit
 **/.credentials.json
 .claude/.credentials.json
+.claude/
+.claude.json
+
+# OpenViking semantic memory — config, data, and API keys NEVER committed
+.openviking/
+**/.openviking/
+ov.conf
+**/ov.conf
