@@ -6,7 +6,9 @@ an Ubuntu VPS, following the EdgeLab "Day 1" methodology.
 > This is an independent installer. It is **not** tied to any previous
 > `wayan_pirat_bot` setup.
 
-> **New here?** Start with [Terms Glossary](docs/TERMS_GLOSSARY.md) and
+> **New here?** Open the **[full beginner guide (RU, HTML)](docs/wayan_agents_full_guide.html)**
+> — download and open in any browser. Or start with the
+> [Terms Glossary](docs/TERMS_GLOSSARY.md) and
 > [Costs & Services](docs/COSTS_AND_SERVICES.md), then come back to *Getting
 > started* below.
 
@@ -58,6 +60,9 @@ laptop. You install and operate them over SSH.
 | [STORAGE_POLICY.md](docs/STORAGE_POLICY.md) | Minimal storage, uploads, transcripts, large links |
 | [OPENVIKING_MEMORY.md](docs/OPENVIKING_MEMORY.md) | Long-term semantic memory |
 | [KNOWLEDGE_EXPORT.md](docs/KNOWLEDGE_EXPORT.md) | Exporting approved Markdown knowledge to Git |
+| [wayan_agents_full_guide.html](docs/wayan_agents_full_guide.html) | **Полный гид для новичка (RU)** — standalone HTML |
+| [PROFESSION_PACKS.md](docs/PROFESSION_PACKS.md) | 8 profession adaptations + how to build your own pack |
+| [WAYAN_SOCIAL_GROWTH.md](docs/WAYAN_SOCIAL_GROWTH.md) | Agent-powered content machine: workflows + templates |
 
 ---
 
