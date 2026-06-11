@@ -20,6 +20,26 @@ This project adheres to [Semantic Versioning](https://semver.org/).
   crash-notify, video ack variants).
 
 ### Added
+- **Final Russian beginner HTML guide (workshop edition).**
+  `docs/wayan_agents_full_guide.html` rebuilt from 14 to 21 sections (~115 KB,
+  standalone, no external deps, dark gold/blue Wayan style, responsive):
+  hero with time/difficulty/secrets warning, full component map, three diagrams
+  (message flow, visual video analysis, repo-first deploy), VPS path map
+  (repo vs production, drift), services + costs table (official pricing pages
+  checked 2026-06-11; figures marked approximate), 33-term beginner glossary
+  (`<details>` blocks: meaning / why / analogy / common mistake / Wayan
+  example), three install paths (Mac→VPS, direct, fork), 18-step install flow
+  (command / why / expected output / common error per step), WAYAN_PACK section
+  with all five pack cards, three-layer memory model (Markdown → Git →
+  OpenViking, hot/warm/cold), Obsidian workflow, safe teaching loop, Jupiter /
+  Uran capability tables with first-day commands, queue + media behavior
+  (/queue, /cancel, no-silence, 20 MB limit, link ingestion), repo-first
+  deploy + rollback, safety & permissions (incl. M6 phase 1 done / rootless
+  planned), 19 troubleshooting cards, 20-item final checklist, public-template
+  section. Copy button on every command (60 blocks, clipboard + fallback,
+  works from `file://`). Structural validation script passes 24/24 checks
+  (sections, details, copy buttons, no secrets, no private IPs, no external
+  resources).
 - **WAYAN_PACK profession installer (v1).** `WAYAN_PACK=<onchain|creator|devops|student|founder> ./install.sh`
   installs a profession preset as a **Markdown-only, no-clobber overlay**: a
   workspace-root `PACK.md` per agent (role emphasis + example commands), a

@@ -19,6 +19,10 @@ under every pack — packs only re-emphasize and re-route them.
 v1 ships five packs: **onchain** (the current Wayan default, formalized),
 **creator**, **devops**, **student**, **founder**.
 
+> Новичкам: раздел 9 русского HTML-гида
+> ([`wayan_agents_full_guide.html`](wayan_agents_full_guide.html)) объясняет
+> пакеты «на пальцах», с карточками всех пяти профессий.
+
 ## How to use a pack
 
 ```bash

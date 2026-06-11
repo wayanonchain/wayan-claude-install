@@ -12,7 +12,8 @@ specialist assistant for a given profession.
 > [`PACKS.md`](PACKS.md) and live in [`packs/`](../packs/README.md). The v1
 > packs implement the overlay parts only (role emphasis, memory seeds, rules,
 > mapping, example commands) on top of the stock skills — the new skills
-> sketched below remain future work.
+> sketched below remain future work. Beginner-friendly RU walkthrough:
+> [`wayan_agents_full_guide.html`](wayan_agents_full_guide.html), раздел 9.
 
 **How a pack maps onto the framework:**
 

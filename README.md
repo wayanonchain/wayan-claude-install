@@ -61,7 +61,7 @@ laptop. You install and operate them over SSH.
 | [STORAGE_POLICY.md](docs/STORAGE_POLICY.md) | Minimal storage, uploads, transcripts, large links |
 | [OPENVIKING_MEMORY.md](docs/OPENVIKING_MEMORY.md) | Long-term semantic memory |
 | [KNOWLEDGE_EXPORT.md](docs/KNOWLEDGE_EXPORT.md) | Exporting approved Markdown knowledge to Git |
-| [wayan_agents_full_guide.html](docs/wayan_agents_full_guide.html) | **Полный гид для новичка (RU)** — standalone HTML |
+| [wayan_agents_full_guide.html](docs/wayan_agents_full_guide.html) | **Полный гид для новичка (RU)** — standalone HTML: 21 раздел, словарь, 18 шагов установки, WAYAN_PACK, память, видео-анализ, troubleshooting |
 | [PACKS.md](docs/PACKS.md) | Installable profession packs (`WAYAN_PACK=…`): usage, layout, creating packs |
 | [PROFESSION_PACKS.md](docs/PROFESSION_PACKS.md) | 8 profession adaptations (design catalog) + how to build your own pack |
 | [WAYAN_SOCIAL_GROWTH.md](docs/WAYAN_SOCIAL_GROWTH.md) | Agent-powered content machine: workflows + templates |
