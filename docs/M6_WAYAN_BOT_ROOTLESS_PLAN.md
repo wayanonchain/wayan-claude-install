@@ -35,7 +35,7 @@ Everything under `/opt/wayan_pirat_bot` is `root:root`:
 | code (`*.py`, `api/ bot/ core/ config/ db/ webhook/ scripts/ tests/`) | 755/644 | world-readable — fine to keep root-owned (bot can't self-modify = a feature) |
 | `venv/` | 755 root | read+exec is enough for the bot user |
 | `data/` → `bot.db`, `bot.db-wal`, `bot.db-shm` (live WAL) | 755/644 root | **must become writable by the bot user** |
-| `.env` (+3 old backups) | **644 root — world-readable, contains Telegram/Helius/Nansen keys** | finding in its own right; target `600` |
+| `.env` (+3 old backups) | ~~644 root — world-readable~~ → **600 root:root, fixed 2026-06-11** (standalone quick win applied; ownership stays root until the de-root cutover) | done |
 | `backups/` | 755 root | manual snapshots; keep root |
 | `.git/` | 755 root | keep root |
 | `/opt/bot_log.txt` (+ rotations `.1..3`) | 644 root | see blocker below |
@@ -205,10 +205,11 @@ the bot now listens on localhost only. Remaining benefit of Phase 2 is
 defense-in-depth (a bot compromise no longer equals root) plus fixing the
 world-readable `.env`. Two notes:
 
-- The **`chmod 600 .env*`** part fixes a real current finding (keys readable
-  by any local user) and could be applied standalone, before the full de-root,
-  with zero downtime and zero risk — recommended as the first action of the
-  apply session.
+- The **`chmod 600 .env*`** part — **applied 2026-06-11** (all four files:
+  `.env` + 3 historical backups, 644 → 600, ownership left `root:root` since
+  the service still runs as root; no content change, no restart needed;
+  service `active` and healthcheck rc=0 verified after). Stage C of the
+  migration shrinks accordingly: only the `chown wayan-bot` of `.env` remains.
 - Tests required **before** applying: Stage A dry-runs green. **After**: full
   Stage E list (process user, port, /health, healthcheck rc=0, a real Telegram
   command answered, one scheduler cycle clean in journal, no `PermissionError`
