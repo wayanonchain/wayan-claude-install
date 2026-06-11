@@ -20,6 +20,23 @@ This project adheres to [Semantic Versioning](https://semver.org/).
   crash-notify, video ack variants).
 
 ### Added
+- **Visual video analysis (gateway 1.1.0a11).** With `VIDEO_VISUAL_ANALYSIS=true`
+  and ffmpeg installed, videos are analyzed **visually as well as by audio**:
+  the gateway downloads the video once, gets a Groq audio transcript, extracts
+  N evenly-spaced keyframes via per-frame `ffmpeg -ss` calls (low-RAM safe,
+  downscaled + JPEG-compressed), has Claude visually inspect every frame, and
+  replies with one merged `## Audio / ## Visual / ## Combined` summary. Frames
+  are written to a per-video dir under `uploads/tmp/` and **deleted right after
+  the reply** (`VIDEO_FRAME_DEBUG_KEEP` for debugging); the raw video follows
+  the existing minimal-storage policy. Every degradation (no audio track,
+  ffmpeg missing, extraction failure/timeout) is reported to the user and
+  logged — no silent paths. Off by default; when off (or ffmpeg is absent) the
+  legacy audio-only path is unchanged. New `src/gateway/video_frames.py`;
+  new env: `VIDEO_VISUAL_ANALYSIS`, `VIDEO_FRAMES`, `VIDEO_FRAME_MAX_WIDTH`,
+  `VIDEO_FRAME_JPEG_QUALITY`, `VIDEO_FRAME_EXTRACTION_TIMEOUT_SEC`,
+  `FFMPEG_PATH`, `VIDEO_FRAME_DEBUG_KEEP`. **Live-tested in production
+  2026-06-11**: full path (download → transcript → 5 frames → merged reply →
+  cleanup) verified in journald; tmp frames and raw video both cleaned.
 - **Public-template & beginner docs.** New `docs/MAC_SETUP.md` (control-machine
   model, SSH keys, `~/.ssh/config`, Remote-SSH), `docs/PUBLIC_TEMPLATE_GUIDE.md`
   (fork & customize; never-commit list), `docs/COSTS_AND_SERVICES.md` (services +

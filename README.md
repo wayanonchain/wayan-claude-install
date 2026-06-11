@@ -313,6 +313,44 @@ anything left in `uploads/tmp/` older than `FILE_RETENTION_HOURS` (default 24h).
 Transcripts and all knowledge dirs are never swept. Full details:
 [`docs/STORAGE_POLICY.md`](docs/STORAGE_POLICY.md).
 
+### Visual Video Analysis — v1.1.0a11
+
+With `VIDEO_VISUAL_ANALYSIS=true` (and `ffmpeg` installed), videos get a full
+**audio + visual** analysis instead of audio-only:
+
+```
+video → download → Groq audio transcript
+              └──→ ffmpeg keyframes (N evenly-spaced JPEG frames)
+                        → Claude reads every frame (vision) + transcript
+                        → one merged reply: ## Audio / ## Visual / ## Combined
+```
+
+1. **Groq** transcribes the audio track (videos without audio degrade
+   gracefully — the user is told, never silently skipped).
+2. **ffmpeg** extracts a few evenly-spaced keyframes, downscaled and
+   JPEG-compressed to stay light on a small VPS.
+3. **Claude** visually inspects each frame and merges both signals into a
+   single structured answer.
+4. **Frames are temporary**: they live in a per-video dir under `uploads/tmp/`
+   and are deleted right after the reply (keep them only with
+   `VIDEO_FRAME_DEBUG_KEEP=true`). The raw video follows the normal
+   minimal-storage policy above.
+5. **Large videos** still hit Telegram's ~20 MB bot-download cap — send a
+   direct link instead (see link ingestion).
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `VIDEO_VISUAL_ANALYSIS` | `false` | Master switch; off = legacy audio-only path |
+| `VIDEO_FRAMES` | `5` | Frames per video (hard cap 10) |
+| `VIDEO_FRAME_MAX_WIDTH` | `768` | Downscale width (px) |
+| `VIDEO_FRAME_JPEG_QUALITY` | `75` | JPEG quality 1–100 |
+| `VIDEO_FRAME_EXTRACTION_TIMEOUT_SEC` | `60` | Total ffmpeg budget per video |
+| `FFMPEG_PATH` | `/usr/bin/ffmpeg` | Override binary location |
+| `VIDEO_FRAME_DEBUG_KEEP` | `false` | Debug: keep extracted frames |
+
+If ffmpeg is missing or extraction fails, the agent says so explicitly and
+falls back to the audio transcript — no silent paths.
+
 ## 14. Skills
 
 Each agent workspace has a `skills/` directory of **read-only playbooks**

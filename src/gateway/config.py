@@ -56,6 +56,16 @@ class Config:
     ytdlp_enabled: bool
     max_redirects: int
     block_private_urls: bool
+    # Visual video analysis: ffmpeg keyframes + Claude vision. Off by default;
+    # when off (or ffmpeg is missing) videos fall back to audio-only analysis.
+    video_visual_analysis: bool
+    video_frames: int
+    video_frame_max_width: int
+    video_frame_jpeg_quality: int
+    video_frame_extraction_timeout_sec: int
+    ffmpeg_path: str
+    # Debug only: keep extracted frames after analysis instead of deleting them.
+    video_frame_debug_keep: bool
 
     @property
     def voice_input_ready(self) -> bool:
@@ -147,4 +157,13 @@ def load_config() -> Config:
         ytdlp_enabled=_get_bool("YTDLP_ENABLED", False),
         max_redirects=_get_int("MAX_REDIRECTS", 5),
         block_private_urls=_get_bool("BLOCK_PRIVATE_URLS", True),
+        video_visual_analysis=_get_bool("VIDEO_VISUAL_ANALYSIS", False),
+        video_frames=_get_int("VIDEO_FRAMES", 5),
+        video_frame_max_width=_get_int("VIDEO_FRAME_MAX_WIDTH", 768),
+        video_frame_jpeg_quality=_get_int("VIDEO_FRAME_JPEG_QUALITY", 75),
+        video_frame_extraction_timeout_sec=_get_int(
+            "VIDEO_FRAME_EXTRACTION_TIMEOUT_SEC", 60),
+        ffmpeg_path=os.environ.get("FFMPEG_PATH", "/usr/bin/ffmpeg").strip()
+        or "/usr/bin/ffmpeg",
+        video_frame_debug_keep=_get_bool("VIDEO_FRAME_DEBUG_KEEP", False),
     )

@@ -20,11 +20,12 @@ from urllib.parse import urlparse
 
 import requests
 
-from . import link_ingest
+from . import link_ingest, video_frames
 from .claude_runner import ClaudeError, run_claude
 from .config import Config
 from .telegram_api import TelegramClient, TelegramError
 from .transcribe import TranscriptionError, transcribe
+from .video_frames import FrameExtractionError
 
 log = logging.getLogger("app")
 
@@ -45,6 +46,27 @@ FILE_PROMPT_TEMPLATE = (
 )
 # Default task when the user sends a file without a caption.
 DEFAULT_FILE_TASK = "Analyze the uploaded file and describe its contents."
+
+# Merged audio+visual video analysis prompt. Frames are read by Claude's own
+# vision (the Read tool renders images), so the prompt only references paths.
+VIDEO_PROMPT_TEMPLATE = (
+    "Task:\n\n"
+    "{task}\n\n"
+    "You are analyzing a video. It has been pre-processed into:\n"
+    "1. an audio transcript (below), and\n"
+    "2. {n_frames} key frame image(s) extracted at evenly spaced timestamps.\n\n"
+    "You MUST first read and visually inspect EVERY frame image listed here, "
+    "in order:\n\n"
+    "{frame_list}\n\n"
+    "Audio transcript:\n\n"
+    "{transcript_block}\n\n"
+    "Then reply with a merged Markdown summary using exactly these sections:\n"
+    "## Audio analysis\n"
+    "## Visual analysis\n"
+    "## Combined summary\n\n"
+    "If any frame cannot be read, say so explicitly — do not guess its content."
+)
+DEFAULT_VIDEO_TASK = "Analyze this video and describe its content."
 
 # Output protocol: anything Claude writes into the workspace 'outbox' is delivered
 # back to the user as a Telegram document. Appended so file-in -> file-out works.
@@ -68,6 +90,9 @@ class Gateway:
         # Raw upload pending post-run handling (transcript + cleanup). Single
         # message in flight at a time, so a single slot is enough.
         self._pending_upload: Optional[dict[str, Any]] = None
+        # Temporary frames directory for the in-flight video analysis; deleted
+        # after the Claude run unless VIDEO_FRAME_DEBUG_KEEP is set.
+        self._pending_frames_dir: Optional[str] = None
         # Large uploads awaiting an explicit "PROCESS FILE" confirmation, per chat.
         self._pending_confirmations: dict[int, dict[str, Any]] = {}
         # Large links awaiting an explicit "PROCESS LINK" confirmation, per chat.
@@ -204,13 +229,18 @@ class Gateway:
 
         pos = self._enqueue(chat_id, msg)
         if att and att["kind"] == "video":
+            if self.cfg.video_visual_analysis:
+                note = ("I will analyze the audio track and key frames of the "
+                        "video.")
+            else:
+                note = ("Note: I analyze the audio track of videos; full visual "
+                        "analysis is disabled (VIDEO_VISUAL_ANALYSIS=false).")
             self.tg.send_message(
                 chat_id,
                 "🎥 Video received. Checking size and processing options... "
-                f"(queue position: {pos})\n"
-                "Note: I analyze the audio track of videos; full visual analysis "
-                "is not supported yet.")
-            log.info("media_ack_sent kind=video chat_id=%s pos=%d", chat_id, pos)
+                f"(queue position: {pos})\n" + note)
+            log.info("media_ack_sent kind=video chat_id=%s pos=%d visual=%s",
+                     chat_id, pos, self.cfg.video_visual_analysis)
         else:
             self.tg.send_message(chat_id, f"✅ Task received. Queue position: {pos}")
             log.info("task_ack_sent chat_id=%s pos=%d", chat_id, pos)
@@ -370,7 +400,10 @@ class Gateway:
                             message_id: Any) -> Optional[str]:
         """Download + route an approved attachment; returns a Claude prompt."""
         kind = att["kind"]
-        if kind in ("audio", "video"):
+        if kind == "video":
+            text = self._process_video_upload(chat_id, att["obj"], caption,
+                                              message_id)
+        elif kind == "audio":
             text = self._transcribe_voice(chat_id, att["obj"], message_id)
         else:  # image / document
             text = self._handle_file(chat_id, att["obj"], caption, message_id)
@@ -549,6 +582,8 @@ class Gateway:
             "final_url": final_url,
             "content_type": content_type,
         }
+        if kind == "video" and self.cfg.video_visual_analysis:
+            return self._analyze_video_file(chat_id, dest, meta, caption)
         if kind in ("audio", "video"):
             return self._media_file_to_transcript(chat_id, dest, meta)
         # document / image: hand the path to Claude; transcript on finalize.
@@ -577,6 +612,143 @@ class Gateway:
             self._safe_remove(path)
         self.tg.send_message(chat_id, f"📝 {transcript}")
         return transcript
+
+    # -- visual video analysis -------------------------------------------------
+    def _process_video_upload(self, chat_id: int, obj: dict[str, Any],
+                              caption: str, message_id: Any) -> Optional[str]:
+        """Telegram video / video_note / animation / video document.
+
+        With VIDEO_VISUAL_ANALYSIS off this is exactly the legacy audio-only
+        path. With it on, the video is downloaded once and routed through the
+        merged audio+visual analysis."""
+        if not self.cfg.video_visual_analysis:
+            return self._transcribe_voice(chat_id, obj, message_id)
+
+        file_id = obj.get("file_id")
+        if not file_id:
+            return None
+        self.tg.send_chat_action(chat_id, "typing")
+        try:
+            log.info("telegram_getfile_started file_id=%s chat_id=%s", file_id, chat_id)
+            info = self.tg.get_file(file_id)
+            file_path = info.get("file_path")
+            if not file_path:
+                log.error("telegram_getfile_failed file_id=%s: no file_path", file_id)
+                raise TelegramError("Telegram did not return a file_path")
+            log.info("media_download_started path=%s", file_path)
+            data = self.tg.download_file(file_path)
+            log.info("media_download_completed bytes=%d", len(data))
+        except (TelegramError, requests.RequestException) as exc:
+            log.error("media_download_failed (video): %s", exc)
+            self.tg.send_message(chat_id, f"⚠️ Could not download the video: {exc}")
+            return None
+
+        raw_name = obj.get("file_name") or os.path.basename(file_path) or "video.mp4"
+        tmp = self._uploads_tmp()
+        os.makedirs(tmp, exist_ok=True)
+        raw_path = os.path.join(tmp, self._safe_filename(raw_name))
+        with open(raw_path, "wb") as fh:
+            fh.write(data)
+        meta = {
+            "filename": os.path.basename(raw_path),
+            "size": len(data),
+            "datetime": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "message_id": message_id,
+        }
+        return self._analyze_video_file(chat_id, raw_path, meta, caption)
+
+    def _analyze_video_file(self, chat_id: int, path: str, meta: dict[str, Any],
+                            caption: str) -> Optional[str]:
+        """Merged video analysis: Groq audio transcript + Claude vision frames.
+
+        Consumes the raw file (deleted unless FILE_KEEP_ORIGINAL). Every
+        degradation (no audio track, ffmpeg missing, frame extraction failure)
+        is reported to the user and logged — never silent. Returns the Claude
+        prompt, or None if neither audio nor frames could be produced."""
+        # 1) Audio track -> Groq transcript (videos may legitimately have none).
+        transcript: Optional[str] = None
+        audio_note = ""
+        if self.cfg.voice_input_ready:
+            try:
+                with open(path, "rb") as fh:
+                    data = fh.read()
+                transcript = transcribe(data, os.path.basename(path), self.cfg)
+                log.info("video audio transcribed (%d chars)", len(transcript))
+            except (TranscriptionError, requests.RequestException, OSError) as exc:
+                audio_note = (f"audio transcript unavailable: {exc} "
+                              "(the video may have no audio track)")
+                log.warning("video audio transcription failed: %s", exc)
+        else:
+            audio_note = ("audio transcript unavailable: voice input is "
+                          "disabled or GROQ_API_KEY is not configured")
+            log.warning("video audio transcription skipped: %s", audio_note)
+
+        # 2) Key frames via ffmpeg (feature is enabled if we got here).
+        frames: list[str] = []
+        frames_dir = path + ".frames"
+        if video_frames.resolve_ffmpeg(self.cfg) is None:
+            log.warning("VIDEO_VISUAL_ANALYSIS=true but ffmpeg is not available "
+                        "(FFMPEG_PATH=%s)", self.cfg.ffmpeg_path)
+            self.tg.send_message(
+                chat_id,
+                "⚠️ Visual analysis is enabled but ffmpeg is not installed — "
+                "falling back to audio-only analysis.")
+        else:
+            try:
+                frames = video_frames.extract_frames(path, frames_dir, self.cfg)
+            except FrameExtractionError as exc:
+                log.error("frame extraction failed: %s", exc)
+                video_frames.cleanup_frames_dir(frames_dir)
+                frames = []
+                self.tg.send_message(
+                    chat_id,
+                    f"⚠️ Could not extract video frames ({exc}) — falling back "
+                    "to audio-only analysis.")
+
+        # 3) Raw video is temporary by policy; transcript md is the knowledge.
+        if transcript:
+            self._write_transcript(
+                {**meta, "provider": f"groq:{self.cfg.groq_model}"}, transcript)
+        if not self.cfg.file_keep_original:
+            self._safe_remove(path)
+
+        if not transcript and not frames:
+            self.tg.send_message(
+                chat_id,
+                f"⚠️ Could not analyze the video: {audio_note}; and no frames "
+                "could be extracted.")
+            return None
+
+        if transcript:
+            self.tg.send_message(chat_id, f"📝 {transcript}")
+
+        if not frames:
+            # Audio-only fallback: behave like the legacy path (the transcript
+            # itself is the Claude prompt).
+            return transcript
+
+        # 4) Merged audio+visual prompt; frames cleaned up after the run.
+        self._pending_frames_dir = frames_dir
+        # Persist the merged analysis as Markdown after the run (own stem so it
+        # does not overwrite the audio transcript written above).
+        stem = os.path.splitext(meta.get("filename") or "video")[0]
+        self._pending_upload = {
+            **meta,
+            "filename": f"{stem}_analysis.md",
+            "raw_path": path,  # may already be deleted; finalize tolerates that
+        }
+        transcript_block = transcript or f"(unavailable — {audio_note})"
+        prompt = VIDEO_PROMPT_TEMPLATE.format(
+            task=(caption or DEFAULT_VIDEO_TASK).strip(),
+            n_frames=len(frames),
+            frame_list="\n".join(os.path.abspath(f) for f in frames),
+            transcript_block=transcript_block,
+        )
+        outbox = os.path.join(self.cfg.workspace, OUTBOX_DIRNAME)
+        os.makedirs(outbox, exist_ok=True)
+        log.info("video visual analysis prepared: %d frame(s), audio=%s",
+                 len(frames), "yes" if transcript else "no")
+        return prompt + OUTPUT_INSTRUCTION.format(outbox=os.path.abspath(outbox))
 
     def _process_platform_link(self, chat_id: int, url: str, caption: str,
                                message_id: Any) -> Optional[str]:
@@ -668,9 +840,22 @@ class Gateway:
         log.info("wrote transcript %s", dest)
         return dest
 
+    def _drop_pending_frames(self) -> None:
+        """Delete the in-flight temporary frames dir (unless debug keep)."""
+        fdir = self._pending_frames_dir
+        self._pending_frames_dir = None
+        if not fdir:
+            return
+        if self.cfg.video_frame_debug_keep:
+            log.info("keeping frames dir (VIDEO_FRAME_DEBUG_KEEP=true): %s", fdir)
+        else:
+            video_frames.cleanup_frames_dir(fdir)
+
     def _finalize_upload(self, success: bool, reply: Optional[str]) -> None:
         """After a file-derived run: persist a Markdown transcript, then drop the
         raw heavy file unless FILE_KEEP_ORIGINAL is set."""
+        # Frames are temporary by policy regardless of how the run ended.
+        self._drop_pending_frames()
         pu = self._pending_upload
         self._pending_upload = None
         if not pu:
@@ -910,17 +1095,20 @@ class Gateway:
         caption = (msg.get("caption") or "").strip()
         message_id = msg.get("message_id", "")
         self._pending_upload = None
+        self._drop_pending_frames()
 
         # "PROCESS FILE" / "PROCESS LINK" confirm a previously-gated large item.
         if text == "PROCESS FILE":
             text = self._confirm_pending(chat_id) or ""
             if not text:
                 self._pending_upload = None
+                self._drop_pending_frames()
                 return
         elif text == "PROCESS LINK":
             text = self._confirm_pending_link(chat_id) or ""
             if not text:
                 self._pending_upload = None
+                self._drop_pending_frames()
                 return
         else:
             # Any attachment goes through the two-step size/disk safety gate.
@@ -929,6 +1117,7 @@ class Gateway:
                 text = self._gate_attachment(chat_id, att, caption, message_id) or ""
                 if not text:
                     self._pending_upload = None
+                    self._drop_pending_frames()
                     return
             else:
                 # A media/document/platform URL in the text is ingested as a file.

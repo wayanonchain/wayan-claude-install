@@ -104,8 +104,11 @@ drafts a 7-day calendar; you approve; calendar saved to Markdown (Git).
 
 ### W7 — Long video/transcript → 5 short clips
 Send video (≤20 MB) or a direct/YouTube link (yt-dlp optional) → audio
-transcript → Jupiter splits into 5 self-contained clip scripts with timestamps,
-hooks, and captions. *(Visual analysis is audio-track-based today.)*
+transcript **+ visual keyframe analysis** (with `VIDEO_VISUAL_ANALYSIS=true`,
+ffmpeg extracts evenly-spaced frames that Claude inspects) → Jupiter splits
+into 5 self-contained clip scripts with timestamps, hooks, and captions — and
+can now reference what's *on screen* (scenes, charts, text overlays), not just
+what's said. Frames are temporary and deleted after the reply.
 
 ### W8 — Community questions → FAQ/content ideas
 Paste/export community questions → Jupiter clusters them → top-10 FAQ (Telegram
