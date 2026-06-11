@@ -624,5 +624,164 @@ class LinkIngestTests(unittest.TestCase):
         self.assertTrue(any("YTDLP_ENABLED" in t for _, t in gw.tg.sent))
 
 
+class TaskQueueTests(unittest.TestCase):
+    """Per-chat queue, instant acks, /queue, /cancel, timeout, video acks.
+
+    The worker thread is NOT started in tests; we drive it via _process_next()
+    so the behavior is deterministic.
+    """
+
+    def setUp(self):
+        self.ws = tempfile.mkdtemp(prefix="wayan-ws-")
+        self._orig_run = appmod.run_claude
+        appmod.run_claude = lambda text, cfg, continue_session: "ok"
+
+    def tearDown(self):
+        appmod.run_claude = self._orig_run
+
+    def _gw(self, **over):
+        gw = make_gateway(make_cfg(workspace=self.ws, **over))
+        gw._free_mb = lambda: 100000
+        return gw
+
+    @staticmethod
+    def _txt(chat_id, text, mid=1):
+        return {"chat": {"id": chat_id}, "text": text, "message_id": mid}
+
+    def test_rapid_messages_acked_with_positions(self):
+        gw = self._gw()
+        for i, t in enumerate(("task one", "task two", "task three"), 1):
+            gw._handle_update(self._txt(1, t, i))
+        acks = [t for _, t in gw.tg.sent if "Task received" in t]
+        self.assertEqual(len(acks), 3)
+        self.assertIn("Queue position: 1", acks[0])
+        self.assertIn("Queue position: 2", acks[1])
+        self.assertIn("Queue position: 3", acks[2])
+        # worker drains in order
+        while gw._process_next():
+            pass
+        replies = [t for _, t in gw.tg.sent if t == "ok"]
+        self.assertEqual(len(replies), 3)
+
+    def test_queue_command_reports_pending(self):
+        gw = self._gw()
+        gw._handle_update(self._txt(1, "a"))
+        gw._handle_update(self._txt(1, "b"))
+        gw._handle_update(self._txt(1, "/queue"))
+        status = [t for _, t in gw.tg.sent if "📋 Queue:" in t]
+        self.assertEqual(len(status), 1)
+        self.assertIn("2 pending task(s) total, 2 from this chat", status[0])
+
+    def test_cancel_command_drops_pending(self):
+        gw = self._gw()
+        gw._handle_update(self._txt(1, "a"))
+        gw._handle_update(self._txt(1, "b"))
+        gw._handle_update(self._txt(1, "/cancel"))
+        self.assertTrue(any("Cancelled 2 pending task(s)" in t for _, t in gw.tg.sent))
+        self.assertFalse(gw._process_next())   # queue is empty
+        self.assertNotIn("ok", [t for _, t in gw.tg.sent])  # nothing ran
+
+    def test_cancel_only_affects_own_chat(self):
+        gw = self._gw()
+        gw._handle_update(self._txt(1, "mine"))
+        gw._handle_update(self._txt(2, "theirs"))
+        gw._handle_update(self._txt(1, "/cancel"))
+        self.assertTrue(any("Cancelled 1 pending" in t for _, t in gw.tg.sent))
+        self.assertTrue(gw._process_next())    # chat 2's task still there
+        self.assertIn((2, "ok"), gw.tg.sent)
+
+    def test_timeout_reply_and_continue(self):
+        calls = {"n": 0}
+
+        def flaky(text, cfg, continue_session):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise appmod.ClaudeError("claude timed out after 300s")
+            return "second ok"
+
+        appmod.run_claude = flaky
+        gw = self._gw()
+        gw._handle_update(self._txt(1, "slow one"))
+        gw._handle_update(self._txt(1, "fast one"))
+        while gw._process_next():
+            pass
+        self.assertTrue(any("⏱" in t and "Moving on" in t for _, t in gw.tg.sent))
+        self.assertIn((1, "second ok"), gw.tg.sent)  # queue continued
+
+    def test_worker_never_silent_on_crash(self):
+        def boom(text, cfg, continue_session):
+            raise RuntimeError("unexpected explosion")
+
+        appmod.run_claude = boom
+        gw = self._gw()
+        gw._handle_update(self._txt(1, "trigger"))
+        self.assertTrue(gw._process_next())
+        self.assertTrue(any("⚠️ Task failed" in t for _, t in gw.tg.sent))
+        self.assertIsNone(gw._current_task)    # state cleared for next task
+
+    def test_unprocessable_update_not_acked(self):
+        gw = self._gw()
+        gw._handle_update({"chat": {"id": 1}, "sticker": {"file_id": "s"}})
+        self.assertEqual(gw.tg.sent, [])       # silent skip, nothing queued
+
+
+class VideoAckTests(unittest.TestCase):
+    """Video / video_note / video-MIME documents must always be acknowledged."""
+
+    def setUp(self):
+        self.ws = tempfile.mkdtemp(prefix="wayan-ws-")
+        self._orig_run = appmod.run_claude
+        appmod.run_claude = lambda text, cfg, continue_session: "ok"
+
+    def tearDown(self):
+        appmod.run_claude = self._orig_run
+
+    def _gw(self, **over):
+        gw = make_gateway(make_cfg(workspace=self.ws, **over))
+        gw._free_mb = lambda: 100000
+        return gw
+
+    def _assert_video_ack(self, gw):
+        self.assertTrue(
+            any("🎥 Video received" in t for _, t in gw.tg.sent),
+            f"no video ack in {gw.tg.sent}")
+
+    def test_video_message_acked(self):
+        gw = self._gw()
+        gw._handle_update({"chat": {"id": 1},
+                           "video": {"file_id": "v", "file_size": 5 * MB}})
+        self._assert_video_ack(gw)
+
+    def test_video_note_acked(self):
+        gw = self._gw()
+        gw._handle_update({"chat": {"id": 1},
+                           "video_note": {"file_id": "v", "file_size": 2 * MB}})
+        self._assert_video_ack(gw)
+
+    def test_video_document_acked(self):
+        gw = self._gw()
+        gw._handle_update({"chat": {"id": 1},
+                           "document": {"file_id": "v", "file_name": "clip.mp4",
+                                        "mime_type": "video/mp4",
+                                        "file_size": 5 * MB}})
+        self._assert_video_ack(gw)
+
+    def test_oversized_video_advises_link_after_ack(self):
+        gw = self._gw()
+        gw._handle_update({"chat": {"id": 1},
+                           "video": {"file_id": "v", "file_size": 30 * MB}})
+        self._assert_video_ack(gw)             # 1) instant ack
+        self.assertTrue(gw._process_next())    # 2) worker gates it
+        self.assertTrue(any("send a direct link" in t for _, t in gw.tg.sent))
+
+    def test_video_over_type_limit_rejected_after_ack(self):
+        gw = self._gw()
+        gw._handle_update({"chat": {"id": 1},
+                           "video": {"file_id": "v", "file_size": 684 * MB}})
+        self._assert_video_ack(gw)
+        self.assertTrue(gw._process_next())
+        self.assertTrue(any("File too large" in t for _, t in gw.tg.sent))
+
+
 if __name__ == "__main__":
     unittest.main()

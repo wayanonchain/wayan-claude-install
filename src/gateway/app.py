@@ -11,7 +11,9 @@ import re
 import shutil
 import signal
 import subprocess
+import threading
 import time
+from collections import deque
 from datetime import datetime, timezone
 from typing import Any, Optional
 from urllib.parse import urlparse
@@ -70,6 +72,119 @@ class Gateway:
         self._pending_confirmations: dict[int, dict[str, Any]] = {}
         # Large links awaiting an explicit "PROCESS LINK" confirmation, per chat.
         self._pending_links: dict[int, dict[str, Any]] = {}
+        # Task queue: updates are acked instantly in the receive loop and
+        # processed sequentially by a single worker. Claude calls are guarded by
+        # a global lock — one `claude --continue` session per workspace, so true
+        # parallel execution would corrupt it.
+        self._tasks: deque[dict[str, Any]] = deque()
+        self._tasks_lock = threading.Lock()
+        self._task_event = threading.Event()
+        self._claude_lock = threading.Lock()
+        self._current_task: Optional[dict[str, Any]] = None
+
+    # -- task queue ------------------------------------------------------------
+    def _enqueue(self, chat_id: int, msg: dict[str, Any]) -> int:
+        """Add a task; returns its queue position (1 = next/immediate)."""
+        with self._tasks_lock:
+            self._tasks.append({"chat_id": chat_id, "msg": msg, "ts": time.time()})
+            pos = len(self._tasks) + (1 if self._current_task else 0)
+        self._task_event.set()
+        return pos
+
+    def _cmd_queue(self, chat_id: int) -> None:
+        with self._tasks_lock:
+            mine = sum(1 for t in self._tasks if t["chat_id"] == chat_id)
+            total = len(self._tasks)
+            cur = self._current_task
+        lines = [f"📋 Queue: {total} pending task(s) total, {mine} from this chat."]
+        if cur is None:
+            lines.append("Idle — the next task starts immediately.")
+        elif cur["chat_id"] == chat_id:
+            lines.append("⏳ Your task is currently running.")
+        else:
+            lines.append("⏳ A task from another chat is currently running.")
+        self.tg.send_message(chat_id, "\n".join(lines))
+
+    def _cmd_cancel(self, chat_id: int) -> None:
+        with self._tasks_lock:
+            before = len(self._tasks)
+            self._tasks = deque(t for t in self._tasks if t["chat_id"] != chat_id)
+            removed = before - len(self._tasks)
+            running = (self._current_task is not None
+                       and self._current_task["chat_id"] == chat_id)
+        log.info("cancel chat_id=%s removed=%d", chat_id, removed)
+        note = f"🗑 Cancelled {removed} pending task(s)."
+        if running:
+            note += " The currently running task cannot be interrupted and will finish."
+        self.tg.send_message(chat_id, note)
+
+    def _process_next(self) -> bool:
+        """Process one queued task. Returns False if the queue was empty.
+        Never silent: every outcome produces a message to the chat."""
+        with self._tasks_lock:
+            if not self._tasks:
+                return False
+            task = self._tasks.popleft()
+            self._current_task = task
+        try:
+            with self._claude_lock:
+                self._handle_message(task["msg"])
+        except Exception as exc:  # noqa: BLE001 — worker must survive anything
+            log.exception("task failed chat_id=%s", task["chat_id"])
+            try:
+                self.tg.send_message(task["chat_id"], f"⚠️ Task failed: {exc}")
+            except Exception:
+                log.exception("could not notify chat %s of failure", task["chat_id"])
+        finally:
+            with self._tasks_lock:
+                self._current_task = None
+        return True
+
+    def _worker_loop(self) -> None:
+        log.info("task worker started")
+        while self._running:
+            if not self._process_next():
+                self._task_event.wait(timeout=1.0)
+                self._task_event.clear()
+        log.info("task worker stopped")
+
+    def _handle_update(self, msg: dict[str, Any]) -> None:
+        """Fast receive-side routing: instant acks + commands; heavy work queued."""
+        chat_id = msg.get("chat", {}).get("id")
+        if chat_id is None:
+            return
+        if not self._allowed(chat_id):
+            log.warning("ignoring update from unauthorized chat_id=%s", chat_id)
+            return
+
+        text = (msg.get("text") or "").strip()
+        if text in ("/start", "/help"):
+            self.tg.send_message(
+                chat_id,
+                f"Wayan {self.cfg.agent} is online. Send a message and I will run "
+                "it through Claude.\nCommands: /queue — show queue, /cancel — drop "
+                "your pending tasks.")
+            return
+        if text == "/queue":
+            self._cmd_queue(chat_id)
+            return
+        if text == "/cancel":
+            self._cmd_cancel(chat_id)
+            return
+
+        att = self._classify_attachment(msg)
+        voice = msg.get("voice") or msg.get("audio")
+        if not (text or att or voice):
+            return  # nothing processable (sticker etc.) — same as before
+
+        pos = self._enqueue(chat_id, msg)
+        if att and att["kind"] == "video":
+            self.tg.send_message(
+                chat_id,
+                "🎥 Video received. Checking size and processing options... "
+                f"(queue position: {pos})")
+        else:
+            self.tg.send_message(chat_id, f"✅ Task received. Queue position: {pos}")
 
     # -- upload-size safety gate ---------------------------------------------
     def _free_mb(self) -> int:
@@ -807,7 +922,13 @@ class Gateway:
             self._session_started = True
         except ClaudeError as exc:
             log.error("claude error: %s", exc)
-            self.tg.send_message(chat_id, f"⚠️ Claude error: {exc}")
+            if "timed out" in str(exc):
+                self.tg.send_message(
+                    chat_id,
+                    f"⏱ Task exceeded {self.cfg.claude_timeout}s and was stopped. "
+                    "Moving on to the next task in the queue.")
+            else:
+                self.tg.send_message(chat_id, f"⚠️ Claude error: {exc}")
             self._finalize_upload(success=False, reply=None)
             return
         reply = reply or "(no output)"
@@ -824,6 +945,10 @@ class Gateway:
         log.info("connected to Telegram as @%s (agent=%s)",
                  me.get("username"), self.cfg.agent)
 
+        worker = threading.Thread(target=self._worker_loop, daemon=True,
+                                  name="task-worker")
+        worker.start()
+
         while self._running:
             try:
                 updates = self.tg.get_updates(self._offset)
@@ -839,11 +964,12 @@ class Gateway:
                 msg = upd.get("message")
                 if msg:
                     try:
-                        self._handle_message(msg)
+                        self._handle_update(msg)  # instant ack; work is queued
                     except Exception:  # one bad update must not kill the loop
                         log.exception("error handling update %s",
                                       upd.get("update_id"))
                 if not self._running:
                     break
 
+        self._task_event.set()  # wake the worker so it can observe shutdown
         log.info("gateway stopped")

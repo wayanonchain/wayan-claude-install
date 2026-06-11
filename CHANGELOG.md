@@ -5,6 +5,20 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased] — v1.1.0-alpha
 
+### Fixed
+- **Task queue + robust video handling.** The gateway now acks every incoming
+  task instantly (`✅ Task received. Queue position: N`) and processes tasks
+  sequentially via a worker thread; Claude calls stay serialized behind a global
+  lock (one `--continue` session per workspace — true parallelism deferred).
+  New `/queue` and `/cancel` commands; per-task timeout replies clearly
+  (`⏱ … Moving on to the next task`) and the queue continues after timeout or
+  crash — no silent failure paths. Videos (`video`, `video_note`, video-MIME
+  documents) get an immediate `🎥 Video received…` ack before size gating;
+  oversized videos get the direct-link advice. `CLAUDE_TASK_TIMEOUT_SEC` added
+  as the preferred timeout name (falls back to `CLAUDE_TIMEOUT`). 12 regression
+  tests (rapid multi-message ordering, /queue, /cancel, timeout-continue,
+  crash-notify, video ack variants).
+
 ### Added
 - **Public-template & beginner docs.** New `docs/MAC_SETUP.md` (control-machine
   model, SSH keys, `~/.ssh/config`, Remote-SSH), `docs/PUBLIC_TEMPLATE_GUIDE.md`

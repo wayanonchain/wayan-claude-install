@@ -109,7 +109,10 @@ def load_config() -> Config:
         token=token,
         workspace=workspace,
         claude_bin=os.environ.get("CLAUDE_BIN", "claude").strip() or "claude",
-        claude_timeout=_get_int("CLAUDE_TIMEOUT", 300),
+        # CLAUDE_TASK_TIMEOUT_SEC is the documented name; CLAUDE_TIMEOUT kept
+        # as a backward-compatible fallback.
+        claude_timeout=_get_int("CLAUDE_TASK_TIMEOUT_SEC",
+                                _get_int("CLAUDE_TIMEOUT", 300)),
         claude_permission_mode=os.environ.get("CLAUDE_PERMISSION_MODE", "").strip(),
         claude_continue=_get_bool("CLAUDE_CONTINUE", True),
         poll_timeout=_get_int("TELEGRAM_POLL_TIMEOUT", 50),

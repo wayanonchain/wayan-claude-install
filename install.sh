@@ -303,6 +303,8 @@ TELEGRAM_ALLOWED_CHAT_IDS=
 CLAUDE_BIN=claude
 # Seconds to wait for a claude response before giving up.
 CLAUDE_TIMEOUT=300
+# Preferred name for the per-task timeout (takes precedence over CLAUDE_TIMEOUT).
+CLAUDE_TASK_TIMEOUT_SEC=300
 # Continue the conversation within a running process (true/false).
 CLAUDE_CONTINUE=true
 # Claude permission mode for headless runs: default | acceptEdits | bypassPermissions | plan
