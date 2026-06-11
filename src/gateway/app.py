@@ -148,13 +148,23 @@ class Gateway:
                 self._task_event.clear()
         log.info("task worker stopped")
 
-    def _handle_update(self, msg: dict[str, Any]) -> None:
+    # Attachment-like update keys we knowingly cannot process. The user always
+    # gets an explicit reply — silence is a bug.
+    UNSUPPORTED_MEDIA_KEYS = ("sticker", "contact", "location", "poll", "venue",
+                              "dice", "game", "video_chat_started")
+
+    def _handle_update(self, msg: dict[str, Any], update_id: Any = None) -> None:
         """Fast receive-side routing: instant acks + commands; heavy work queued."""
         chat_id = msg.get("chat", {}).get("id")
         if chat_id is None:
             return
+        payload_keys = ",".join(k for k in msg
+                                if k not in ("chat", "from", "date", "message_id",
+                                             "entities", "caption_entities"))
+        log.info("telegram_update_received update_id=%s chat_id=%s keys=%s",
+                 update_id, chat_id, payload_keys)
         if not self._allowed(chat_id):
-            log.warning("ignoring update from unauthorized chat_id=%s", chat_id)
+            log.warning("update_rejected_unauthorized chat_id=%s", chat_id)
             return
 
         text = (msg.get("text") or "").strip()
@@ -174,17 +184,36 @@ class Gateway:
 
         att = self._classify_attachment(msg)
         voice = msg.get("voice") or msg.get("audio")
+        if att:
+            obj = att["obj"]
+            log.info("media_detected kind=%s size=%s mime=%s chat_id=%s",
+                     att["kind"], att["size_bytes"],
+                     obj.get("mime_type", ""), chat_id)
         if not (text or att or voice):
-            return  # nothing processable (sticker etc.) — same as before
+            unsupported = [k for k in self.UNSUPPORTED_MEDIA_KEYS if k in msg]
+            if unsupported:
+                log.info("unsupported_media keys=%s chat_id=%s", unsupported, chat_id)
+                self.tg.send_message(
+                    chat_id,
+                    f"📎 I can't process this attachment type ({unsupported[0]}) "
+                    "yet. Send text, a voice note, a photo, a document, or a video.")
+            else:
+                log.info("update_ignored_no_content update_id=%s chat_id=%s keys=%s",
+                         update_id, chat_id, payload_keys)
+            return
 
         pos = self._enqueue(chat_id, msg)
         if att and att["kind"] == "video":
             self.tg.send_message(
                 chat_id,
                 "🎥 Video received. Checking size and processing options... "
-                f"(queue position: {pos})")
+                f"(queue position: {pos})\n"
+                "Note: I analyze the audio track of videos; full visual analysis "
+                "is not supported yet.")
+            log.info("media_ack_sent kind=video chat_id=%s pos=%d", chat_id, pos)
         else:
             self.tg.send_message(chat_id, f"✅ Task received. Queue position: {pos}")
+            log.info("task_ack_sent chat_id=%s pos=%d", chat_id, pos)
 
     # -- upload-size safety gate ---------------------------------------------
     def _free_mb(self) -> int:
@@ -207,7 +236,9 @@ class Gateway:
 
     def _classify_attachment(self, msg: dict[str, Any]) -> Optional[dict[str, Any]]:
         """Identify a single attachment, its type and size, from a message."""
-        obj = msg.get("video") or msg.get("video_note")
+        # `animation` = muted/GIF-style video (Telegram sends sound-off videos
+        # and GIFs this way) — must be treated as video, NOT silently dropped.
+        obj = msg.get("video") or msg.get("video_note") or msg.get("animation")
         kind = "video" if obj else None
         if not obj:
             obj = msg.get("voice") or msg.get("audio")
@@ -693,11 +724,15 @@ class Gateway:
         self.tg.send_chat_action(chat_id, "typing")
         raw_path = None
         try:
+            log.info("telegram_getfile_started file_id=%s chat_id=%s", file_id, chat_id)
             info = self.tg.get_file(file_id)
             file_path = info.get("file_path")
             if not file_path:
+                log.error("telegram_getfile_failed file_id=%s: no file_path", file_id)
                 raise TranscriptionError("Telegram did not return a file_path")
+            log.info("media_download_started path=%s", file_path)
             audio = self.tg.download_file(file_path)
+            log.info("media_download_completed bytes=%d", len(audio))
             # Save the heavy file to uploads/tmp (temporary by policy).
             tmp = self._uploads_tmp()
             os.makedirs(tmp, exist_ok=True)
@@ -705,9 +740,11 @@ class Gateway:
             raw_path = os.path.join(tmp, filename)
             with open(raw_path, "wb") as fh:
                 fh.write(audio)
+            log.info("media_processing_started provider=groq file=%s", filename)
             transcript = transcribe(audio, filename, self.cfg)
+            log.info("media_processing_completed chars=%d", len(transcript))
         except (TelegramError, TranscriptionError, requests.RequestException) as exc:
-            log.error("voice transcription failed: %s", exc)
+            log.error("media_processing_failed (getfile/download/transcribe): %s", exc)
             self.tg.send_message(chat_id, f"⚠️ Voice transcription failed: {exc}")
             if raw_path:  # don't leave a half-processed heavy file around
                 try:
@@ -823,13 +860,17 @@ class Gateway:
 
         self.tg.send_chat_action(chat_id, "typing")
         try:
+            log.info("telegram_getfile_started file_id=%s chat_id=%s", file_id, chat_id)
             info = self.tg.get_file(file_id)
             file_path = info.get("file_path")
             if not file_path:
+                log.error("telegram_getfile_failed file_id=%s: no file_path", file_id)
                 raise TelegramError("Telegram did not return a file_path")
+            log.info("media_download_started path=%s", file_path)
             data = self.tg.download_file(file_path)
+            log.info("media_download_completed bytes=%d", len(data))
         except (TelegramError, requests.RequestException) as exc:
-            log.error("file download failed: %s", exc)
+            log.error("media_download_failed: %s", exc)
             self.tg.send_message(chat_id, f"⚠️ Не смог скачать файл: {exc}")
             return None
 
@@ -964,7 +1005,8 @@ class Gateway:
                 msg = upd.get("message")
                 if msg:
                     try:
-                        self._handle_update(msg)  # instant ack; work is queued
+                        # instant ack; work is queued
+                        self._handle_update(msg, upd.get("update_id"))
                     except Exception:  # one bad update must not kill the loop
                         log.exception("error handling update %s",
                                       upd.get("update_id"))

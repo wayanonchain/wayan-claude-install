@@ -719,10 +719,13 @@ class TaskQueueTests(unittest.TestCase):
         self.assertTrue(any("⚠️ Task failed" in t for _, t in gw.tg.sent))
         self.assertIsNone(gw._current_task)    # state cleared for next task
 
-    def test_unprocessable_update_not_acked(self):
+    def test_unsupported_media_gets_explicit_reply(self):
+        # No-silence rule: stickers etc. must produce a clear reply, not nothing.
         gw = self._gw()
         gw._handle_update({"chat": {"id": 1}, "sticker": {"file_id": "s"}})
-        self.assertEqual(gw.tg.sent, [])       # silent skip, nothing queued
+        self.assertTrue(any("can't process this attachment type" in t
+                            for _, t in gw.tg.sent))
+        self.assertFalse(gw._process_next())   # nothing queued
 
 
 class VideoAckTests(unittest.TestCase):
@@ -781,6 +784,32 @@ class VideoAckTests(unittest.TestCase):
         self._assert_video_ack(gw)
         self.assertTrue(gw._process_next())
         self.assertTrue(any("File too large" in t for _, t in gw.tg.sent))
+
+    def test_animation_muted_video_acked_not_silent(self):
+        # Telegram delivers muted/GIF-style videos as `animation` — previously a
+        # zero-log silent drop. Must now ack and process as video.
+        gw = self._gw()
+        gw._handle_update({"chat": {"id": 1},
+                           "animation": {"file_id": "a", "file_size": 3 * MB,
+                                         "mime_type": "video/mp4"}})
+        self._assert_video_ack(gw)
+        self.assertTrue(gw._process_next())    # queued and processed (not dropped)
+
+    def test_getfile_failure_replies_clearly(self):
+        gw = self._gw(groq_api_key="k")
+        from gateway.telegram_api import TelegramError as TE
+
+        def failing(file_id):
+            raise TE("getFile failed: file is too big")
+
+        gw.tg.get_file = failing
+        gw._handle_update({"chat": {"id": 1},
+                           "video": {"file_id": "v", "file_size": 5 * MB}})
+        self._assert_video_ack(gw)
+        self.assertTrue(gw._process_next())
+        self.assertTrue(any("⚠️" in t and "failed" in t.lower()
+                            for _, t in gw.tg.sent),
+                        f"no user-facing error in {gw.tg.sent}")
 
 
 if __name__ == "__main__":
