@@ -55,6 +55,7 @@ laptop. You install and operate them over SSH.
 | [COSTS_AND_SERVICES.md](docs/COSTS_AND_SERVICES.md) | What you need and roughly what it costs |
 | [TERMS_GLOSSARY.md](docs/TERMS_GLOSSARY.md) | Plain-English definitions (SSH, VPS, API key, …) |
 | [PUBLIC_TEMPLATE_GUIDE.md](docs/PUBLIC_TEMPLATE_GUIDE.md) | Fork & customize; what to never commit |
+| [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Repo-first deploys: drift check, dry-run, backups, rollback |
 | [DAY2_ORCHESTRATION.md](docs/DAY2_ORCHESTRATION.md) | Rules / learnings / memory / mapping / skill-lab |
 | [PERMISSIONS.md](docs/PERMISSIONS.md) | Role-based agent permission profiles |
 | [STORAGE_POLICY.md](docs/STORAGE_POLICY.md) | Minimal storage, uploads, transcripts, large links |
@@ -228,14 +229,23 @@ journalctl -u wayan-uran.service -f
 
 ---
 
-## 11. Update
+## 11. Deploy / Update
+
+**GitHub is the single source of truth** — never edit `/opt/wayan-*/gateway`
+directly on the VPS. Full workflow, drift checks, and rollback:
+[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ```bash
 cd wayan-claude-install
-sudo bash scripts/update.sh
+bash scripts/update.sh                        # pull main + tests + drift check (read-only)
+sudo bash scripts/deploy-gateway.sh --dry-run # preview a deploy, change nothing
+sudo bash scripts/deploy-gateway.sh --restart # backup → sync both agents → restart → verify
+bash scripts/deploy-gateway.sh --check        # drift report: PASS/FAIL, names only
 ```
 
-Pulls the latest repo, re-runs the installer, restarts services, prints status.
+Every deploy creates `/opt/wayan-*/gateway.bak.YYYYMMDD-HHMMSS` for rollback
+and never touches env files, secrets, or OpenViking. The legacy full
+re-install path is still available: `sudo bash scripts/update.sh --full`.
 
 ---
 

@@ -20,6 +20,25 @@ This project adheres to [Semantic Versioning](https://semver.org/).
   crash-notify, video ack variants).
 
 ### Added
+- **Repo-first gateway deployment workflow.** GitHub is now the explicit single
+  source of truth for `src/gateway/` (motivated by 1.1.0a11 existing on the VPS
+  before the repo — reconciled in `6fcaadb`). New `scripts/deploy-gateway.sh`:
+  `--check` (drift report, PASS/FAIL, **file names only** — never contents or
+  secrets), `--dry-run` (full preview, changes nothing), and deploy mode that
+  refuses a dirty tree (override: `--allow-dirty`), creates timestamped
+  `gateway.bak.YYYYMMDD-HHMMSS` backups, syncs both `/opt` agent trees
+  (`chown wayan:wayan`), runs a per-venv import sanity check, optionally
+  restarts + verifies services (`--restart`), and re-verifies checksums after
+  deploy. By construction it never touches env files, secrets, `ov.conf`,
+  OpenViking, venvs, or workspaces — and aborts if anything secret-shaped
+  appears inside `src/gateway/`. `scripts/update.sh` rewritten repo-first:
+  pull → full test suite → drift check, deploying **only** with explicit
+  `--deploy [--restart]` (legacy installer path kept as `--full`). New
+  `docs/DEPLOYMENT.md` (workflow, rollback, drift checks, secret hygiene);
+  README "Deploy / Update" section; ROADMAP M4 updated + M6 host-hardening
+  milestone added. 8 new tests (sandboxed repo + fake `/opt` trees): syntax,
+  check PASS/drift, dry-run immutability, dirty-tree refusal, backup creation,
+  env-file untouchability.
 - **Visual video analysis (gateway 1.1.0a11).** With `VIDEO_VISUAL_ANALYSIS=true`
   and ffmpeg installed, videos are analyzed **visually as well as by audio**:
   the gateway downloads the video once, gets a Groq audio transcript, extracts

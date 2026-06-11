@@ -112,10 +112,28 @@ must pass `bash -n` + gateway tests + a VPS smoke test before release.
 ### M4 — Auto update
 **Goal:** safe, scheduled updates from GitHub.
 
-- `systemd` timer running `update.sh`; pull only when a newer tag exists.
+- Foundation **delivered 2026-06**: repo-first deploy loop —
+  `scripts/deploy-gateway.sh` (`--check` / `--dry-run` / `--restart`,
+  timestamped backups, drift report) + repo-first `scripts/update.sh`
+  (pull → tests → drift check; deploys only with explicit `--deploy`).
+  See `docs/DEPLOYMENT.md`.
+- Remaining: `systemd` timer running `update.sh`; pull only when a newer tag exists.
 - Pre-update snapshot of env/templates; health gate + auto-rollback on failure.
 - Respect idempotency; never overwrite secrets.
 - **Done when:** a new tag is picked up, applied, services restarted, verified — or rolled back.
+
+### M6 — Host security hardening (separate milestone; not started)
+**Goal:** close host-level exposure that is outside this repo's scope.
+
+- A non-repo service (`/opt/wayan_pirat_bot`, runs as root) listens on
+  `0.0.0.0:8080` on the production host. Decide: firewall it, bind it to
+  `127.0.0.1`, drop root, or retire it.
+- Review host firewall (ufw/nftables) as a whole: only 22/80 (+443 if needed)
+  should be public; OpenViking must stay `127.0.0.1:1933`.
+- Deliberately **not** bundled into the deploy-loop milestone — touching an
+  unknown root service needs its own audit, backup, and rollback plan.
+- **Done when:** `ss -tlnp` on the host shows no unexpected `0.0.0.0` listeners
+  and the change is documented in the audit log.
 
 ### M5 — Multi-agent scaling
 **Goal:** move from two hardcoded agents to N declarative agents.
