@@ -122,18 +122,27 @@ must pass `bash -n` + gateway tests + a VPS smoke test before release.
 - Respect idempotency; never overwrite secrets.
 - **Done when:** a new tag is picked up, applied, services restarted, verified — or rolled back.
 
-### M6 — Host security hardening (separate milestone; not started)
+### M6 — Host security hardening (phase 1 delivered 2026-06-11)
 **Goal:** close host-level exposure that is outside this repo's scope.
 
-- A non-repo service (`/opt/wayan_pirat_bot`, runs as root) listens on
-  `0.0.0.0:8080` on the production host. Decide: firewall it, bind it to
-  `127.0.0.1`, drop root, or retire it.
-- Review host firewall (ufw/nftables) as a whole: only 22/80 (+443 if needed)
-  should be public; OpenViking must stay `127.0.0.1:1933`.
-- Deliberately **not** bundled into the deploy-loop milestone — touching an
-  unknown root service needs its own audit, backup, and rollback plan.
-- **Done when:** `ss -tlnp` on the host shows no unexpected `0.0.0.0` listeners
-  and the change is documented in the audit log.
+- ✅ **Port exposure closed (2026-06-11).** Investigation showed the non-repo
+  service (`/opt/wayan_pirat_bot`) needed no inbound traffic at all: Telegram
+  runs on long polling, `HELIUS_INGEST_ENABLED=false` (webhook events were
+  ACK'd and discarded), `/webhook/helius` had **no auth** configured, and
+  `/health` is only probed by a localhost watchdog timer. The only real
+  traffic was vulnerability scanners. Fix: `WEBHOOK_HOST=127.0.0.1` in its
+  `.env` (backup kept), service restarted, `ufw delete allow 8080/tcp`.
+  Verified: uvicorn on `127.0.0.1:8080`, healthcheck timer green, polling
+  live, `ss -tlnp` shows only 22 (sshd) and 80 (nginx; not in ufw allow list)
+  on `0.0.0.0`. OpenViking unchanged at `127.0.0.1:1933`.
+- Remaining (phase 2): drop root for `wayan-bot` (dedicated user + systemd
+  hardening: NoNewPrivileges, ProtectSystem, ReadWritePaths) — needs its own
+  test pass over file/db ownership.
+- Remaining (phase 3, optional): delete the stale Helius webhook registration
+  via their API so Helius stops POSTing into a closed port; it self-recreates
+  from `HELIUS_WEBHOOK_URL` if the SM pipeline is ever re-enabled.
+- **Done when:** the service runs unprivileged and `ss -tlnp` stays free of
+  unexpected `0.0.0.0` listeners.
 
 ### M5 — Multi-agent scaling
 **Goal:** move from two hardcoded agents to N declarative agents.

@@ -126,6 +126,8 @@ As defense in depth, the deploy aborts if anything secret-shaped (`*.env`,
 
 ## Known follow-up (separate security milestone — out of scope here)
 
-A host service outside this repo (`/opt/wayan_pirat_bot`, root, Python) listens
-on `0.0.0.0:8080`. It is deliberately **not** touched by this workflow; firewall
-review / localhost binding is tracked as its own milestone in `ROADMAP.md`.
+A host service outside this repo (`/opt/wayan_pirat_bot`, root, Python) used to
+listen on `0.0.0.0:8080`; since 2026-06-11 it is bound to `127.0.0.1:8080` and
+the ufw rule is removed (ROADMAP M6 phase 1). Remaining M6 work (de-root the
+service, clean up the stale Helius webhook registration) stays tracked in
+`ROADMAP.md` and is **not** part of the deploy workflow.
