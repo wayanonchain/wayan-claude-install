@@ -62,7 +62,8 @@ laptop. You install and operate them over SSH.
 | [OPENVIKING_MEMORY.md](docs/OPENVIKING_MEMORY.md) | Long-term semantic memory |
 | [KNOWLEDGE_EXPORT.md](docs/KNOWLEDGE_EXPORT.md) | Exporting approved Markdown knowledge to Git |
 | [wayan_agents_full_guide.html](docs/wayan_agents_full_guide.html) | **Полный гид для новичка (RU)** — standalone HTML |
-| [PROFESSION_PACKS.md](docs/PROFESSION_PACKS.md) | 8 profession adaptations + how to build your own pack |
+| [PACKS.md](docs/PACKS.md) | Installable profession packs (`WAYAN_PACK=…`): usage, layout, creating packs |
+| [PROFESSION_PACKS.md](docs/PROFESSION_PACKS.md) | 8 profession adaptations (design catalog) + how to build your own pack |
 | [WAYAN_SOCIAL_GROWTH.md](docs/WAYAN_SOCIAL_GROWTH.md) | Agent-powered content machine: workflows + templates |
 
 ---
@@ -141,6 +142,8 @@ wayan-claude-install/
 ├── templates/
 │   ├── jupiter/{CLAUDE.md,USER.md}
 │   └── uran/{CLAUDE.md,USER.md}
+├── packs/
+│   └── {onchain,creator,devops,student,founder}/   (profession overlays)
 ├── systemd/
 │   ├── wayan-jupiter.service
 │   └── wayan-uran.service
@@ -172,6 +175,23 @@ If you are reinstalling, clean up first:
 ```bash
 sudo bash scripts/cleanup.sh
 ```
+
+### Optional: profession pack
+
+Pick a profession preset at install time — a Markdown-only overlay (role
+emphasis + memory seeds + rules + mapping) on top of the same install:
+
+```bash
+WAYAN_PACK=onchain sudo -E ./install.sh   # crypto/onchain analyst (the Wayan default, formalized)
+WAYAN_PACK=creator sudo -E ./install.sh   # content creator / influencer
+WAYAN_PACK=devops  sudo -E ./install.sh   # developer / devops
+WAYAN_PACK=student sudo -E ./install.sh   # researcher / student
+WAYAN_PACK=founder sudo -E ./install.sh   # founder / startup operator
+```
+
+No `WAYAN_PACK` = the exact default install. Packs never overwrite existing
+files, add no services/env/permissions, and don't disable the stock skills.
+Full guide: [`docs/PACKS.md`](docs/PACKS.md).
 
 ---
 

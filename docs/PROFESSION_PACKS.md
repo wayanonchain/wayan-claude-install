@@ -5,6 +5,15 @@ operations agent). A **profession pack** is a curated set of skills, memory
 seeds, rules, and mapping entries that turns the same infrastructure into a
 specialist assistant for a given profession.
 
+> **Shipping since v1:** five of these adaptations are installable today as
+> Markdown overlays — `WAYAN_PACK=onchain|creator|devops|student|founder ./install.sh`.
+> This document is the **design catalog** (ideas, including future skills);
+> the installer mechanism and the shipped packs are documented in
+> [`PACKS.md`](PACKS.md) and live in [`packs/`](../packs/README.md). The v1
+> packs implement the overlay parts only (role emphasis, memory seeds, rules,
+> mapping, example commands) on top of the stock skills — the new skills
+> sketched below remain future work.
+
 **How a pack maps onto the framework:**
 
 | Pack element | Lives in |

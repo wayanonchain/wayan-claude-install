@@ -20,6 +20,25 @@ This project adheres to [Semantic Versioning](https://semver.org/).
   crash-notify, video ack variants).
 
 ### Added
+- **WAYAN_PACK profession installer (v1).** `WAYAN_PACK=<onchain|creator|devops|student|founder> ./install.sh`
+  installs a profession preset as a **Markdown-only, no-clobber overlay**: a
+  workspace-root `PACK.md` per agent (role emphasis + example commands), a
+  profession-shaped `orchestration/memory/cold.md` seed, and additive
+  `rules/<pack>-routing.md` + `mapping/<pack>-services.md`. Packs add no
+  infrastructure (no services/env/permissions/manifests), never disable the
+  six stock skills, and never overwrite existing files — the pack deploys
+  *before* the default templates so its `cold.md` seed wins the no-clobber
+  race on a fresh install, while re-installs touch nothing. Both agent
+  `CLAUDE.md` templates gain one generic hook line (read `PACK.md` at session
+  start if present). Pack names are validated (`^[a-z][a-z0-9_-]{0,31}$`);
+  unknown packs abort **before any system change** with the available-pack
+  list. No `WAYAN_PACK` = identical default install; `onchain` is the current
+  Wayan default formalized as a thin pack (neutral default deferred to v2).
+  Final banner shows the selected pack. New `packs/` (5 packs × 6 files +
+  README), `docs/PACKS.md` (usage, copy map, creating/switching packs,
+  Markdown-first rationale); README + `docs/PROFESSION_PACKS.md` cross-linked;
+  12 tests in `tests/test_packs.py` (layout, syntax, validation, missing-pack
+  listing, no secrets, no-clobber preserved, default flow unchanged).
 - **Repo-first gateway deployment workflow.** GitHub is now the explicit single
   source of truth for `src/gateway/` (motivated by 1.1.0a11 existing on the VPS
   before the repo — reconciled in `6fcaadb`). New `scripts/deploy-gateway.sh`:

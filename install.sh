@@ -14,6 +14,9 @@
 #   git clone https://github.com/wayanonchain/wayan-claude-install.git
 #   cd wayan-claude-install && sudo ./install.sh
 #
+# Optional profession pack (Markdown overlay, no-clobber — see docs/PACKS.md):
+#   WAYAN_PACK=onchain sudo -E ./install.sh
+#
 set -euo pipefail
 
 # ----------------------------------------------------------------------------
@@ -37,6 +40,9 @@ SUDOERS_FILE="/etc/sudoers.d/wayan-agents"
 JUPITER_SERVICE="/etc/systemd/system/wayan-jupiter.service"
 URAN_SERVICE="/etc/systemd/system/wayan-uran.service"
 
+# Optional profession pack (Markdown overlay). Empty = default install, no pack flow.
+WAYAN_PACK="${WAYAN_PACK:-}"
+
 # ----------------------------------------------------------------------------
 # Logging helpers
 # ----------------------------------------------------------------------------
@@ -45,6 +51,44 @@ ok()   { printf '\033[1;32m[+]\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m[!]\033[0m %s\n' "$*"; }
 err()  { printf '\033[1;31m[x]\033[0m %s\n' "$*" >&2; }
 die()  { err "$*"; exit 1; }
+
+# ----------------------------------------------------------------------------
+# 0. Profession pack preflight (runs before anything else so a typo in
+#    WAYAN_PACK fails fast — before root checks, apt, or any system change).
+# ----------------------------------------------------------------------------
+verify_pack_in() {
+  # Verify packs/$WAYAN_PACK/pack.md exists under the given source dir;
+  # on failure, list the available packs and abort.
+  local src="$1"
+  if [[ -f "${src}/packs/${WAYAN_PACK}/pack.md" ]]; then
+    ok "Profession pack selected: ${WAYAN_PACK}"
+    return 0
+  fi
+  err "Unknown pack '${WAYAN_PACK}': ${src}/packs/${WAYAN_PACK}/pack.md not found."
+  err "Available packs:"
+  local p found=0
+  for p in "${src}/packs"/*/pack.md; do
+    [[ -f "${p}" ]] || continue
+    err "  - $(basename "$(dirname "${p}")")"
+    found=1
+  done
+  [[ "${found}" -eq 1 ]] || err "  (none — packs/ directory missing or empty)"
+  exit 1
+}
+
+preflight_pack() {
+  [[ -z "${WAYAN_PACK}" ]] && return 0
+  if [[ ! "${WAYAN_PACK}" =~ ^[a-z][a-z0-9_-]{0,31}$ ]]; then
+    die "Invalid WAYAN_PACK name '${WAYAN_PACK}'. Allowed: lowercase letters, digits, '-', '_' (max 32 chars, must start with a letter)."
+  fi
+  # If we are running from a local clone, verify the pack exists right now.
+  # (curl|bash runs re-verify after resolve_sources clones the repo.)
+  local script_dir
+  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || true)"
+  if [[ -n "${script_dir}" && -d "${script_dir}/packs" ]]; then
+    verify_pack_in "${script_dir}"
+  fi
+}
 
 # ----------------------------------------------------------------------------
 # 1. Must run as root
@@ -217,6 +261,41 @@ copy_templates() {
   copy_template "${SRC_DIR}/templates/jupiter/USER.md"  "${JUPITER_WS}/USER.md"
   copy_template "${SRC_DIR}/templates/uran/CLAUDE.md"   "${URAN_WS}/CLAUDE.md"
   copy_template "${SRC_DIR}/templates/uran/USER.md"     "${URAN_WS}/USER.md"
+}
+
+# ----------------------------------------------------------------------------
+# 8a. Profession pack overlay (optional, WAYAN_PACK=<name>). Runs BEFORE the
+#     default templates/skills/orchestration so pack seeds (e.g. memory/cold.md)
+#     win the no-clobber race against the generic defaults. Markdown only —
+#     no services, no env, no permissions. Existing files are never overwritten.
+# ----------------------------------------------------------------------------
+deploy_pack() {
+  [[ -z "${WAYAN_PACK}" ]] && return 0
+  local pack_dir="${SRC_DIR}/packs/${WAYAN_PACK}"
+  log "Deploying profession pack '${WAYAN_PACK}' (Markdown overlay, no-clobber) ..."
+
+  local agent ws f
+  for agent in jupiter uran; do
+    ws="${LAB_DIR}/${agent}"
+    # Workspace-root PACK.md — picked up at session start via the CLAUDE.md hook.
+    if [[ -f "${pack_dir}/${agent}/PACK.md" ]]; then
+      copy_template "${pack_dir}/${agent}/PACK.md" "${ws}/PACK.md"
+    fi
+    # Orchestration overlays: memory seed + additive rules/mapping files.
+    install -d -m 0750 -o "${WAYAN_USER}" -g "${WAYAN_USER}" \
+      "${ws}/orchestration" "${ws}/orchestration/memory" \
+      "${ws}/orchestration/rules" "${ws}/orchestration/mapping"
+    if [[ -f "${pack_dir}/memory/cold.md" ]]; then
+      copy_template "${pack_dir}/memory/cold.md" "${ws}/orchestration/memory/cold.md"
+    fi
+    for f in "${pack_dir}/rules/"*.md; do
+      [[ -f "${f}" ]] && copy_template "${f}" "${ws}/orchestration/rules/$(basename "${f}")"
+    done
+    for f in "${pack_dir}/mapping/"*.md; do
+      [[ -f "${f}" ]] && copy_template "${f}" "${ws}/orchestration/mapping/$(basename "${f}")"
+    done
+    ok "pack '${WAYAN_PACK}' overlay ready in ${ws}"
+  done
 }
 
 # ----------------------------------------------------------------------------
@@ -515,6 +594,9 @@ final_banner() {
    - wayan-jupiter.service   (main agent)
    - wayan-uran.service      (backup / root-fix agent)
 
+ PROFESSION PACK
+   - $( [[ -n "${WAYAN_PACK}" ]] && echo "${WAYAN_PACK}  (overlay in <workspace>/PACK.md — see docs/PACKS.md)" || echo "default (no pack selected — WAYAN_PACK=<name> to use one)" )
+
  WORKSPACES
    - Jupiter: ${JUPITER_WS}
    - Uran:    ${URAN_WS}
@@ -550,14 +632,18 @@ EOF
 # Main
 # ----------------------------------------------------------------------------
 main() {
+  preflight_pack
   require_root
   require_ubuntu
   resolve_sources
+  # Re-verify against the resolved sources (covers the curl|bash clone path).
+  [[ -n "${WAYAN_PACK}" ]] && verify_pack_in "${SRC_DIR}"
   install_packages
   install_node
   create_user
   install_claude
   create_dirs
+  deploy_pack
   copy_templates
   deploy_skills
   deploy_orchestration

@@ -12,6 +12,9 @@ channel that exists to keep **Jupiter** alive.
 - Help with general VPS / system issues.
 - Be a fully independent second line of communication to the operator.
 
+## Profession pack
+- If a `PACK.md` file exists in this workspace root, read it at session start — it extends this role with a profession pack.
+
 ## Workspace
 - Your home base is `/home/wayan/.claude-lab/uran`.
 - Your service is `wayan-uran.service` (managed by systemd).

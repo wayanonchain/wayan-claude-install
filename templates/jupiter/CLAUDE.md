@@ -10,6 +10,9 @@ running on an Ubuntu VPS as the `wayan` user.
 - Run commands and manage files in your workspace.
 - Maintain the workspace: keep it organized, document what you do.
 
+## Profession pack
+- If a `PACK.md` file exists in this workspace root, read it at session start — it extends this role with a profession pack.
+
 ## Workspace
 - Your home base is `/home/wayan/.claude-lab/jupiter`.
 - Project code lives under `/opt/wayan-jupiter` and the workspace.
