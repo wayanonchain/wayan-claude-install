@@ -189,7 +189,23 @@ builds on.
   without a per-change prompt. Explicitly **off by default**; opt-in only, and
   only after the manual loop has proven a change class safe.
 
-## 8. Cross-cutting concerns
+## 8. Profession packs (future modular add-ons)
+
+The framework is profession-agnostic; **profession packs** adapt it by swapping
+Markdown only (skills, memory seeds, rules, mapping) — the gateway, queue,
+storage policy, permissions, and memory infra stay shared. Eight pack designs
+are documented in [docs/PROFESSION_PACKS.md](docs/PROFESSION_PACKS.md):
+Crypto/Onchain Analyst (shipped as the default), Content Creator, Founder,
+Developer/DevOps, Researcher/Student, Coach/Consultant, Real-Estate/Relocation,
+SMM/Community Manager.
+
+**Adding a new pack** = 2–4 new `SKILL.md` files + routing lines in `CLAUDE.md`
++ `cold.md` seed + domain rules + mapping entries; deployed via the normal
+installer/apply-templates flow. See the recipe at the end of
+[PROFESSION_PACKS.md](docs/PROFESSION_PACKS.md). Future work: ship packs as
+selectable installer options (`WAYAN_PACK=creator install.sh`).
+
+## 9. Cross-cutting concerns
 
 - **Secrets:** keep tokens/keys in `/etc/wayan-*.env` (mode 0640, root:wayan); never in git.
 - **Least privilege:** revisit Uran's perm mode (`acceptEdits` today) and sudoers
