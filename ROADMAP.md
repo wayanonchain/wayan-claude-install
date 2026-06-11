@@ -135,9 +135,16 @@ must pass `bash -n` + gateway tests + a VPS smoke test before release.
   Verified: uvicorn on `127.0.0.1:8080`, healthcheck timer green, polling
   live, `ss -tlnp` shows only 22 (sshd) and 80 (nginx; not in ufw allow list)
   on `0.0.0.0`. OpenViking unchanged at `127.0.0.1:1933`.
-- Remaining (phase 2): drop root for `wayan-bot` (dedicated user + systemd
-  hardening: NoNewPrivileges, ProtectSystem, ReadWritePaths) — needs its own
-  test pass over file/db ownership.
+- 📐 **Phase 2 planned (2026-06-11, audit/design only — server untouched).**
+  Full rootless-hardening plan in `docs/M6_WAYAN_BOT_ROOTLESS_PLAN.md`:
+  dedicated `wayan-bot` system user, minimal chown set (`data/`, `.env`,
+  new `logs/`), hardened unit (NoNewPrivileges, ProtectSystem, PrivateTmp,
+  ReadWritePaths), staged A–F migration with rollback, ~30–60 s downtime.
+  Audit findings: the bot needs root for **nothing**; blocker identified —
+  log file lives at `/opt/bot_log.txt` (rotation needs write on `/opt`),
+  fixed by a one-line LOG_DIR change in the bot's own repo; bonus finding —
+  `.env` with live keys is world-readable (644), `chmod 600` recommended as
+  the standalone first action. Verdict: apply later in a quiet window.
 - Remaining (phase 3, optional): delete the stale Helius webhook registration
   via their API so Helius stops POSTing into a closed port; it self-recreates
   from `HELIUS_WEBHOOK_URL` if the SM pipeline is ever re-enabled.
