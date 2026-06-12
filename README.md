@@ -6,11 +6,16 @@ an Ubuntu VPS, following the EdgeLab "Day 1" methodology.
 > This is an independent installer. It is **not** tied to any previous
 > `wayan_pirat_bot` setup.
 
-> **New here?** Open the **[full beginner guide (RU, HTML)](docs/wayan_agents_full_guide.html)**
-> — download and open in any browser. Or start with the
+> **New here? → [Open the full Russian HTML guide](https://wayanonchain.github.io/wayan-claude-install/wayan_agents_full_guide.html)**
+> (GitHub Pages, no install needed). Or start with the
 > [Terms Glossary](docs/TERMS_GLOSSARY.md) and
 > [Costs & Services](docs/COSTS_AND_SERVICES.md), then come back to *Getting
 > started* below.
+>
+> Other ways to read the guide:
+> - **Open online:** <https://wayanonchain.github.io/wayan-claude-install/wayan_agents_full_guide.html>
+> - **Download HTML:** [raw file](https://raw.githubusercontent.com/wayanonchain/wayan-claude-install/main/docs/wayan_agents_full_guide.html) → save as `wayan_agents_full_guide.html` (Cmd/Ctrl+S)
+> - **Open locally:** double-click the saved file — it works in any browser, fully offline, no dependencies.
 
 ---
 
