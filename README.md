@@ -20,6 +20,20 @@ an Ubuntu VPS, following the EdgeLab "Day 1" methodology.
 > [EN](https://raw.githubusercontent.com/wayanonchain/wayan-claude-install/main/docs/wayan_agents_full_guide_en.html)
 > raw HTML, save it as a file, and double-click — it works in any browser, fully offline, no dependencies.
 
+**Quick reference** (details in the sections below):
+
+```bash
+# Install (Ubuntu 22.04/24.04 VPS, as root) — §6
+curl -fsSL https://raw.githubusercontent.com/wayanonchain/wayan-claude-install/main/install.sh | sudo bash
+
+# Optional profession pack (onchain | creator | devops | student | founder) — §6
+WAYAN_PACK=creator sudo -E ./install.sh
+
+# Update & deploy (repo-first; GitHub is the source of truth) — §11
+bash scripts/update.sh                        # pull + tests + drift check (read-only)
+sudo bash scripts/deploy-gateway.sh --restart # backup → sync → restart → verify
+```
+
 ---
 
 ## Getting started

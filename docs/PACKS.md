@@ -21,7 +21,8 @@ v1 ships five packs: **onchain** (the current Wayan default, formalized),
 
 > Новичкам: раздел 9 русского HTML-гида
 > ([`wayan_agents_full_guide.html`](wayan_agents_full_guide.html)) объясняет
-> пакеты «на пальцах», с карточками всех пяти профессий.
+> пакеты «на пальцах», с карточками всех пяти профессий. English version:
+> section 9 of [`wayan_agents_full_guide_en.html`](wayan_agents_full_guide_en.html).
 
 ## How to use a pack
 

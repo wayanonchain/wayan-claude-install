@@ -81,8 +81,10 @@ Released: **v1.0.0** (initial deployable) → **v1.0.1** (namespace/home-dir fix
 Sequenced by dependency and risk. Each milestone ships behind config flags and
 must pass `bash -n` + gateway tests + a VPS smoke test before release.
 
-### M1 — Voice support (Groq)
+### M1 — Voice support (Groq) — ✅ delivered in v1.1.0-alpha
 **Goal:** accept Telegram voice notes; transcribe via Groq; answer through Claude.
+*(Delivered and extended beyond the original goal: files/PDF/images, video with
+visual analysis, link ingestion — see CHANGELOG and README §13.)*
 
 - Telegram `voice`/`audio` updates → `getFile` → download `.ogg`.
 - Transcribe with Groq (Whisper-class model) via `GROQ_API_KEY`.
@@ -223,21 +225,23 @@ builds on.
   without a per-change prompt. Explicitly **off by default**; opt-in only, and
   only after the manual loop has proven a change class safe.
 
-## 8. Profession packs (future modular add-ons)
+## 8. Profession packs (v1 delivered 2026-06-11)
 
 The framework is profession-agnostic; **profession packs** adapt it by swapping
 Markdown only (skills, memory seeds, rules, mapping) — the gateway, queue,
-storage policy, permissions, and memory infra stay shared. Eight pack designs
-are documented in [docs/PROFESSION_PACKS.md](docs/PROFESSION_PACKS.md):
-Crypto/Onchain Analyst (shipped as the default), Content Creator, Founder,
-Developer/DevOps, Researcher/Student, Coach/Consultant, Real-Estate/Relocation,
-SMM/Community Manager.
+storage policy, permissions, and memory infra stay shared.
 
-**Adding a new pack** = 2–4 new `SKILL.md` files + routing lines in `CLAUDE.md`
-+ `cold.md` seed + domain rules + mapping entries; deployed via the normal
-installer/apply-templates flow. See the recipe at the end of
-[PROFESSION_PACKS.md](docs/PROFESSION_PACKS.md). Future work: ship packs as
-selectable installer options (`WAYAN_PACK=creator install.sh`).
+- ✅ **WAYAN_PACK installer shipped (v1).** Five packs are selectable at
+  install time: `WAYAN_PACK=onchain|creator|devops|student|founder sudo -E
+  ./install.sh`. Packs are Markdown-only, no-clobber overlays (workspace
+  `PACK.md` + `cold.md` seed + routing rules + services mapping); the default
+  install is unchanged when `WAYAN_PACK` is unset. Mechanics + how to build a
+  pack: [docs/PACKS.md](docs/PACKS.md); tests: `tests/test_packs.py`.
+- The full design catalog (8 professions, incl. three not yet shipped:
+  Coach/Consultant, Real-Estate/Relocation, SMM/Community Manager) remains in
+  [docs/PROFESSION_PACKS.md](docs/PROFESSION_PACKS.md).
+- Future (v2): optional neutral default templates; pack manifests if packs
+  ever need conditionals/versioning.
 
 ## 9. Cross-cutting concerns
 
