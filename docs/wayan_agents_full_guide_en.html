@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wayan Agents: Jupiter + Uran — the complete install &amp; understanding guide</title>
+<style>
+  :root{
+    --bg:#06080f; --bg2:#0a0f1e; --panel:#0d1428; --panel2:#111a33;
+    --gold:#d4af37; --gold2:#f0cd6a; --blue:#3b6ecc; --text:#dfe3ee;
+    --muted:#8b93a8; --ok:#4ade80; --warn:#fbbf24; --err:#f87171;
+    --mono:'SF Mono',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);font:16px/1.65 -apple-system,'Segoe UI',Roboto,sans-serif}
+  .wrap{max-width:920px;margin:0 auto;padding:24px 20px 80px}
+  header{padding:48px 0 32px;text-align:center;border-bottom:1px solid #1c2747}
+  header h1{font-size:2.2em;color:var(--gold);letter-spacing:.5px}
+  header .sub{color:var(--text);margin-top:12px;font-size:1.05em;max-width:640px;margin-left:auto;margin-right:auto}
+  .badge{display:inline-block;background:var(--panel2);border:1px solid var(--gold);color:var(--gold2);
+    border-radius:20px;padding:3px 14px;font-size:.8em;margin:14px 4px 0}
+  .langlink{margin-top:16px;font-size:.92em}
+  .langlink a{color:var(--blue);text-decoration:none}
+  .langlink a:hover{color:var(--gold2)}
+  h2{color:var(--gold);font-size:1.45em;margin:56px 0 16px;padding-top:20px;border-top:1px solid #1c2747}
+  h3{color:var(--gold2);font-size:1.12em;margin:28px 0 10px}
+  h4{color:var(--gold2);font-size:1em;margin:18px 0 8px}
+  p{margin:10px 0}
+  a{color:var(--blue)} a:hover{color:var(--gold2)}
+  ul,ol{margin:10px 0 10px 24px}
+  li{margin:5px 0}
+  .panel{background:var(--panel);border:1px solid #1c2747;border-radius:12px;padding:18px 20px;margin:16px 0}
+  .gold-edge{border-left:3px solid var(--gold)}
+  .warn-card{background:#1d1607;border:1px solid var(--warn);border-left:4px solid var(--warn);border-radius:10px;padding:14px 18px;margin:16px 0}
+  .warn-card b{color:var(--warn)}
+  .info-card{background:#0a1428;border:1px solid var(--blue);border-left:4px solid var(--blue);border-radius:10px;padding:14px 18px;margin:16px 0}
+  .info-card b{color:#7ea7ee}
+  .ok-card{background:#07190f;border:1px solid var(--ok);border-left:4px solid var(--ok);border-radius:10px;padding:14px 18px;margin:16px 0}
+  .ok-card b{color:var(--ok)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:.93em}
+  th{color:var(--gold2);text-align:left;border-bottom:2px solid var(--gold);padding:8px 10px}
+  td{border-bottom:1px solid #1c2747;padding:8px 10px;vertical-align:top}
+  code{font-family:var(--mono);background:#161f3a;color:var(--gold2);padding:2px 6px;border-radius:5px;font-size:.88em;word-break:break-word}
+  .cmd{position:relative;background:#040610;border:1px solid #1c2747;border-radius:10px;
+    padding:14px 110px 14px 16px;margin:12px 0;font-family:var(--mono);font-size:.86em;
+    color:#c9d4f5;white-space:pre-wrap;word-break:break-all}
+  .cmd .cp{position:absolute;top:9px;right:9px;background:var(--panel2);border:1px solid var(--gold);
+    color:var(--gold2);border-radius:7px;padding:4px 12px;font-size:.85em;cursor:pointer;font-family:inherit}
+  .cmd .cp:hover{background:var(--gold);color:#06080f}
+  details{background:var(--panel);border:1px solid #1c2747;border-radius:10px;margin:10px 0;padding:0}
+  summary{cursor:pointer;padding:13px 16px;color:var(--gold2);font-weight:600;list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"▸ ";color:var(--gold)}
+  details[open] summary::before{content:"▾ "}
+  details .body{padding:0 18px 16px;color:var(--text)}
+  details .body p{margin:8px 0}
+  .diagram{background:#040610;border:1px solid var(--gold);border-radius:12px;padding:20px;
+    font-family:var(--mono);font-size:.82em;line-height:1.55;color:var(--gold2);
+    white-space:pre;overflow-x:auto;text-align:center;margin:18px 0}
+  .toc{background:var(--panel);border:1px solid var(--gold);border-radius:12px;padding:20px 24px;margin:28px 0;
+    columns:2;column-gap:32px}
+  .toc a{display:block;padding:4px 0;color:var(--text);text-decoration:none;break-inside:avoid}
+  .toc a:hover{color:var(--gold2)}
+  .check li{list-style:none;margin:7px 0}
+  .check li::before{content:"☐ ";color:var(--gold);font-size:1.1em}
+  .tag{font-size:.78em;border-radius:5px;padding:1px 8px;margin-right:6px;font-weight:700;white-space:nowrap}
+  .ok{background:#0d2818;color:var(--ok)} .wr{background:#2a2208;color:var(--warn)} .er{background:#2a0d0d;color:var(--err)}
+  .step{background:var(--panel);border:1px solid #1c2747;border-left:3px solid var(--gold);border-radius:10px;padding:16px 20px;margin:18px 0}
+  .step h3{margin-top:0}
+  .meta{color:var(--muted);font-size:.9em}
+  .packgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:16px 0}
+  footer{margin-top:70px;padding-top:24px;border-top:1px solid #1c2747;text-align:center;color:var(--muted);font-size:.9em}
+  footer .gold{color:var(--gold)}
+  @media(max-width:640px){
+    .wrap{padding:16px 12px 60px} header h1{font-size:1.5em}
+    .cmd{padding-right:16px;padding-bottom:46px} .cmd .cp{top:auto;bottom:8px;right:8px}
+    table{font-size:.8em} .toc{columns:1} .diagram{font-size:.72em;text-align:left}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ================= 1. HERO ================= -->
+<header id="s1">
+  <h1>⚡ Wayan Agents: Jupiter + Uran</h1>
+  <p class="sub">How to install and understand a Telegram AI-agent system with long-term memory, Git, Obsidian, and profession packs.</p>
+  <div>
+    <span class="badge">Jupiter · research &amp; content</span>
+    <span class="badge">Uran · server &amp; support</span>
+    <span class="badge">OpenViking · semantic memory</span>
+    <span class="badge">WAYAN_PACK · profession presets</span>
+  </div>
+  <p class="langlink">🇷🇺 <a href="wayan_agents_full_guide.html">Читать этот гид по-русски</a></p>
+</header>
+
+<div class="panel gold-edge" style="margin-top:28px">
+  <h3 style="margin-top:0">What you will build</h3>
+  <p>Wayan Agents is a <b>reusable Telegram AI agent framework</b>. You will end up with two
+  personal AI agents living on your own server 24/7, reachable from Telegram:
+  <b>Jupiter</b> — the primary research/content/analysis agent (tokens, PDFs, voice notes, videos, posts), and
+  <b>Uran</b> — an independent operations/server/support agent that reads logs, diagnoses the box, and restarts Jupiter when it falls over.
+  Plus long-term semantic memory (OpenViking), a knowledge base in Markdown + Git + Obsidian,
+  and a one-command installer with profession presets.</p>
+  <table>
+    <tr><th>Time</th><th>Difficulty</th><th>What you need before starting</th></tr>
+    <tr>
+      <td>≈ 1.5–3 hours the first time (including sign-ups)</td>
+      <td>Beginner-with-instructions: you can copy commands and read terminal output. Deep Linux knowledge is not required.</td>
+      <td>A computer with a terminal (Mac/Windows/Linux), a bank card for the VPS and APIs, a Telegram account.</td>
+    </tr>
+  </table>
+</div>
+
+<div class="warn-card"><b>⚠️ The one safety rule that matters most.</b>
+Never paste secrets (API keys, bot tokens, passwords) into public chats, screenshots, issues, or GitHub.
+This guide uses placeholders everywhere: <code>YOUR_API_KEY</code>, <code>YOUR_BOT_TOKEN</code>, <code>YOUR_GROQ_KEY</code>, <code>YOUR_OPENAI_KEY</code>, <code>SERVER_IP</code>.
+If you ever leak a key — revoke it in the provider's dashboard immediately and create a new one.</div>
+
+<nav class="toc">
+  <a href="#s2"><b>2.</b> What Wayan Agents are</a>
+  <a href="#s3"><b>3.</b> Architecture: three diagrams</a>
+  <a href="#s4"><b>4.</b> Where everything lives</a>
+  <a href="#s5"><b>5.</b> Services &amp; costs before installing</a>
+  <a href="#s6"><b>6.</b> Beginner glossary (33 terms)</a>
+  <a href="#s7"><b>7.</b> Three installation paths</a>
+  <a href="#s8"><b>8.</b> Step-by-step install (18 steps)</a>
+  <a href="#s9"><b>9.</b> WAYAN_PACK: profession packs</a>
+  <a href="#s10"><b>10.</b> How memory works</a>
+  <a href="#s11"><b>11.</b> Where Obsidian fits</a>
+  <a href="#s12"><b>12.</b> How to teach the agents</a>
+  <a href="#s13"><b>13.</b> What Jupiter can do</a>
+  <a href="#s14"><b>14.</b> What Uran can do</a>
+  <a href="#s15"><b>15.</b> Task queue and media</a>
+  <a href="#s16"><b>16.</b> Updates: repo-first deploy</a>
+  <a href="#s17"><b>17.</b> Safety and permissions</a>
+  <a href="#s18"><b>18.</b> When something breaks (19 cards)</a>
+  <a href="#s19"><b>19.</b> Final checklist</a>
+  <a href="#s20"><b>20.</b> The repo as a template</a>
+  <a href="#s21"><b>21.</b> Wrap-up</a>
+</nav>
+
+<!-- ================= 2. WHAT IT IS ================= -->
+<h2 id="s2">2. What Wayan Agents are</h2>
+
+<p>Wayan Agents is a <b>kit for building personal AI agents</b>. You rent a small server,
+run the installer from an open GitHub repository — and get two agents in Telegram.
+Every part of the system does one understandable job:</p>
+
+<table>
+  <tr><th>Part</th><th>Role in plain words</th></tr>
+  <tr><td><b>Jupiter</b></td><td>The main agent: research, analysis, content. The one you message every day.</td></tr>
+  <tr><td><b>Uran</b></td><td>The backup "mechanic": server diagnostics, logs, restarting Jupiter when it crashes. A separate bot — an independent line of communication.</td></tr>
+  <tr><td><b>Telegram</b></td><td>The interface. No websites or consoles in daily life — you just message a bot (text, voice, files, video).</td></tr>
+  <tr><td><b>VPS</b></td><td>The always-on rented server where the agents live 24/7 — even when your laptop is off.</td></tr>
+  <tr><td><b>Claude Code</b></td><td>The "brain": the Claude model with tools — it thinks, runs commands, reads and writes files.</td></tr>
+  <tr><td><b>GitHub</b></td><td>The source of truth: code, templates, rules, and the full history of every change. Where you install from and commit to.</td></tr>
+  <tr><td><b>OpenViking</b></td><td>Semantic long-term memory: the agent finds relevant knowledge by meaning, not by exact keywords.</td></tr>
+  <tr><td><b>Markdown</b></td><td>The format of all knowledge: plain text files that humans and agents read equally well.</td></tr>
+  <tr><td><b>Obsidian</b></td><td>The human-facing window into that Markdown knowledge: read, edit, organize.</td></tr>
+  <tr><td><b>Groq</b></td><td>Speech-to-text (Whisper): voice notes and video audio tracks become text.</td></tr>
+  <tr><td><b>OpenAI</b></td><td>The embeddings/VLM provider for OpenViking — what makes the memory "semantic".</td></tr>
+  <tr><td><b>ffmpeg</b></td><td>Extracts keyframes from videos so Claude can literally <i>see</i> the footage.</td></tr>
+  <tr><td><b>WAYAN_PACK</b></td><td>A profession preset at install time: onchain analyst, creator, devops, student, founder.</td></tr>
+</table>
+
+<div class="info-card"><b>Why two agents instead of one?</b>
+A single agent is a single point of failure: if it hangs, nobody can revive it remotely.
+Uran is an independent second channel with its own bot and its own service, holding scoped
+<code>sudo</code> for exactly one job: "read the logs and restart Jupiter". Jupiter goes down → you message Uran → Uran fixes it.</div>
+
+<!-- ================= 3. ARCHITECTURE ================= -->
+<h2 id="s3">3. Architecture: three diagrams</h2>
+
+<h3>3.1 The main flow: from message to knowledge</h3>
+<div class="diagram">User
+      ↓
+   Telegram  (text · voice · files · video)
+      ↓
+Jupiter / Uran   (gateway + task queue)
+      ↓
+ Claude Code   (the brain: thinks and acts)
+      ↓
+Skills · Rules · Memory · OpenViking
+      ↓
+Markdown  →  Git  →  Obsidian</div>
+<p>Every message travels this path: Telegram receives it, the gateway queues a task,
+Claude Code solves it using skills, rules, and memory — and the result settles into
+Markdown files that Git versions and Obsidian displays.</p>
+
+<h3>3.2 The video flow: visual analysis</h3>
+<div class="diagram">Telegram video
+      ↓
+  download into a temporary folder
+      ↓
+Groq: audio → transcript     +     ffmpeg: keyframes
+      └──────────────┬───────────────┘
+                     ↓
+        Claude: looks at frames + reads transcript
+                     ↓
+   one merged review: ## Audio / ## Visual / ## Combined
+                     ↓
+     Markdown transcript  +  Telegram reply</div>
+<p>Videos are analyzed on two channels at once: Groq transcribes the sound, ffmpeg extracts
+a few evenly-spaced frames, Claude inspects each frame and merges both signals into one answer.
+Frames and the raw video are temporary: after the reply, only the Markdown transcript remains.</p>
+
+<h3>3.3 The update flow: repo-first deploy</h3>
+<div class="diagram">GitHub repository  (source of truth)
+      ↓
+scripts/update.sh   (git pull + tests + drift check)
+      ↓
+   tests pass
+      ↓
+scripts/deploy-gateway.sh   (backup → sync)
+      ↓
+/opt/wayan-jupiter  +  /opt/wayan-uran
+      ↓
+systemd restart   (service restart with verification)</div>
+<p>Code is <b>never</b> edited directly on the server. Change → commit to GitHub → update script
+with tests → deploy with an automatic backup. Details in <a href="#s16">section 16</a>.</p>
+<!-- ================= 4. WHERE EVERYTHING LIVES ================= -->
+<h2 id="s4">4. Where everything lives</h2>
+
+<p>After installation, a handful of paths matter on the VPS. Understanding them is important:
+half of all beginner problems are "edited the wrong file in the wrong place".</p>
+
+<table>
+  <tr><th>Path</th><th>What it is</th></tr>
+  <tr><td><code>/root/wayan-claude-install</code></td><td>The GitHub repo cloned onto the server. <b>The working copy of the source of truth</b>: updates and deploys start here.</td></tr>
+  <tr><td><code>/opt/wayan-jupiter/gateway</code></td><td><b>Production code</b> for Jupiter: the Telegram gateway + Python environment. Code only arrives here via the deploy script.</td></tr>
+  <tr><td><code>/opt/wayan-uran/gateway</code></td><td>The same for Uran — a separate copy, so the agents stay independent.</td></tr>
+  <tr><td><code>/home/wayan/.claude-lab/jupiter</code></td><td>Jupiter's <b>workspace</b>: CLAUDE.md (the role), skills/, orchestration/, transcripts/, uploads/, PACK.md (if a pack was chosen).</td></tr>
+  <tr><td><code>/home/wayan/.claude-lab/uran</code></td><td>Uran's workspace — same structure.</td></tr>
+  <tr><td><code>/home/wayan/.openviking</code></td><td>OpenViking memory: the <code>ov.conf</code> config (holds keys, permissions 600) and the index data. Never enters Git.</td></tr>
+  <tr><td><code>/etc/wayan-jupiter.env</code></td><td>Jupiter's secrets and settings: bot token, Groq key, voice/video flags. Permissions 600/640.</td></tr>
+  <tr><td><code>/etc/wayan-uran.env</code></td><td>The same for Uran — separate token, separate file.</td></tr>
+  <tr><td><code>/opt/wayan_pirat_bot</code></td><td>A <b>legacy bot</b>, not part of this repository. Leave it alone: it has its own life and its own timers.</td></tr>
+</table>
+
+<h3>Repository vs production: why they are different places</h3>
+<div class="panel gold-edge">
+<p><b>The repository</b> (<code>/root/wayan-claude-install</code>) is the "blueprints": code with history, tests, and a way back.
+<b>Production</b> (<code>/opt/wayan-*</code>) is the "running machine": what systemd services actually execute.</p>
+<p><b>Why GitHub is the source of truth.</b> When truth lives in Git, any machine can be rebuilt from scratch,
+every change is visible in history, and tests run <i>before</i> code reaches production.</p>
+<p><b>Why editing <code>/opt</code> directly is dangerous.</b> Such an edit is invisible to Git ("drift"):
+the next deploy silently overwrites it, there is nothing to roll back to, and "it worked yesterday" becomes unanswerable.
+This project had a real drift incident once — which is why <code>deploy-gateway.sh --check</code> now exists to catch it.</p>
+</div>
+
+<!-- ================= 5. SERVICES & COSTS ================= -->
+<h2 id="s5">5. Services &amp; costs before installing</h2>
+
+<p>You need a few accounts before installing. The prices below are <b>approximate, as of the time
+of writing (June 2026)</b>, and they change: always check the official pricing page.</p>
+
+<table>
+  <tr><th>Service</th><th>Why you need it</th><th>If it's missing</th><th>Price (approx.)</th></tr>
+  <tr>
+    <td><b>VPS provider</b><br><span class="meta">Ubuntu 22.04/24.04, 2 GB RAM</span></td>
+    <td>The always-on server where the agents live 24/7.</td>
+    <td>The system has nowhere to run — this is the foundation.</td>
+    <td>≈ $5–12/mo for 1–2 GB. Check: <a href="https://www.hetzner.com/cloud">Hetzner</a>, <a href="https://www.vultr.com/pricing/">Vultr</a>, <a href="https://www.digitalocean.com/pricing/droplets">DigitalOcean</a></td>
+  </tr>
+  <tr>
+    <td><b>GitHub</b></td>
+    <td>Source of truth: code, templates, your versioned knowledge base.</td>
+    <td>No versions, no rollback, no template to fork.</td>
+    <td>Free (public and private repos). <a href="https://github.com/pricing">github.com/pricing</a></td>
+  </tr>
+  <tr>
+    <td><b>Telegram + BotFather</b></td>
+    <td>The interface to the agents: two bots — two tokens.</td>
+    <td>Nothing to talk to — the agents live in Telegram.</td>
+    <td>Free. <a href="https://core.telegram.org/bots">core.telegram.org/bots</a></td>
+  </tr>
+  <tr>
+    <td><b>Claude subscription / Claude Code</b></td>
+    <td>The "brain" of both agents: model + tools.</td>
+    <td>The agents can't think — an error on every message.</td>
+    <td>Pro ≈ $20/mo (or ≈ $17/mo billed annually), Max from ≈ $100/mo; Claude Code is included in Pro and Max. Check: <a href="https://claude.com/pricing">claude.com/pricing</a></td>
+  </tr>
+  <tr>
+    <td><b>Groq API</b></td>
+    <td>Speech recognition: voice notes and video audio → text.</td>
+    <td>Text and files still work; voice and video audio don't.</td>
+    <td>Pay-as-you-go: Whisper large-v3-turbo ≈ $0.04 per hour of audio. Check: <a href="https://groq.com/pricing">groq.com/pricing</a></td>
+  </tr>
+  <tr>
+    <td><b>OpenAI API</b></td>
+    <td>Embeddings + VLM for OpenViking memory.</td>
+    <td>Semantic memory won't work; everything else will.</td>
+    <td>Pay-as-you-go; fund your balance with at least $5. Embeddings are very cheap. Check the current official pricing page: <a href="https://openai.com/api/pricing">openai.com/api/pricing</a></td>
+  </tr>
+  <tr>
+    <td><b>Obsidian</b> <span class="meta">(optional)</span></td>
+    <td>Comfortable viewing/editing of the Markdown knowledge.</td>
+    <td>The knowledge opens in any editor — just less comfortably.</td>
+    <td>Free for personal use. <a href="https://obsidian.md">obsidian.md</a></td>
+  </tr>
+  <tr>
+    <td><b>Cursor / VS Code Remote-SSH</b> <span class="meta">(optional)</span></td>
+    <td>Edit files on the server as if they were local.</td>
+    <td>Everything can be done in a plain terminal.</td>
+    <td>VS Code — free; Cursor has paid plans. Check the official sites.</td>
+  </tr>
+</table>
+
+<div class="info-card"><b>The money picture (light personal use).</b>
+Fixed: VPS ≈ $5–12/mo. Usage-based: the Claude subscription (the main line item),
+Groq — cents per audio minute, OpenAI — cents per stored memory. Free: GitHub, Telegram, Obsidian.
+All figures are approximate and subject to change — official pages above.</div>
+
+<h3>Sign-up checklist</h3>
+<ul class="check">
+  <li>VPS created (Ubuntu 22.04/24.04, ideally 2 GB RAM), IP and root access in hand</li>
+  <li>GitHub account created</li>
+  <li>Telegram works, @BotFather found</li>
+  <li>Claude Pro/Max subscription active (or you've chosen API billing)</li>
+  <li>Groq key created at <a href="https://console.groq.com">console.groq.com</a></li>
+  <li>OpenAI key created, balance funded with ≥ $5</li>
+  <li>Spending limits set in the Groq/OpenAI dashboards (recommended)</li>
+</ul>
+
+<!-- ================= 6. TERMINOLOGY ================= -->
+<h2 id="s6">6. Beginner glossary</h2>
+<p>33 terms you'll meet in this guide. Each block expands: what it is, why it matters, an analogy,
+the common mistake, and an example from Wayan Agents.</p>
+
+<details><summary>SSH</summary><div class="body">
+<p><b>What it is:</b> a protocol for securely connecting to a remote computer through a terminal.</p>
+<p><b>Why:</b> the whole server is managed over SSH — installing, configuring, reading logs.</p>
+<p><b>Analogy:</b> a teleport into the server room: you "sit at its keyboard" without leaving your chair.</p>
+<p><b>Common mistake:</b> losing track of where you are — local terminal or already on the server. Look at the prompt: <code>root@server</code> = you're on the server.</p>
+<p><b>In Wayan:</b> <code>ssh root@SERVER_IP</code> is the first step of the install.</p>
+</div></details>
+
+<details><summary>VPS</summary><div class="body">
+<p><b>What it is:</b> a Virtual Private Server — a rented virtual machine in a datacenter.</p>
+<p><b>Why:</b> the agents must run 24/7, and your laptop doesn't.</p>
+<p><b>Analogy:</b> a rented apartment for your programs: small, but always "home".</p>
+<p><b>Common mistake:</b> picking 512 MB RAM to save money — the memory layer and agents will suffocate. Get 2 GB.</p>
+<p><b>In Wayan:</b> the whole system lives on one VPS running Ubuntu 22.04/24.04.</p>
+</div></details>
+
+<details><summary>Linux user</summary><div class="body">
+<p><b>What it is:</b> an account inside the server with its own files and permissions.</p>
+<p><b>Why:</b> separation of powers: what a program running under this name is allowed to do.</p>
+<p><b>Analogy:</b> office badges — the janitor's badge and the director's badge open different doors.</p>
+<p><b>Common mistake:</b> doing everything as root because "it's simpler". That way one mistake levels the whole server.</p>
+<p><b>In Wayan:</b> the installer creates the <code>wayan</code> user — the agents run as it, not as root.</p>
+</div></details>
+
+<details><summary>root</summary><div class="body">
+<p><b>What it is:</b> the Linux superuser — can do anything, no questions asked.</p>
+<p><b>Why:</b> installing packages and creating services has to be done as root (via <code>sudo</code>).</p>
+<p><b>Analogy:</b> the master key to the entire building.</p>
+<p><b>Common mistake:</b> running things as root that should run as a regular user (like the Claude login).</p>
+<p><b>In Wayan:</b> <code>install.sh</code> requires root; but you log in to Claude as <code>wayan</code>: <code>sudo -u wayan -i</code>.</p>
+</div></details>
+
+<details><summary>Git</summary><div class="body">
+<p><b>What it is:</b> a version control system — it remembers every state of your files.</p>
+<p><b>Why:</b> change history, rollback, collaboration, the "source of truth".</p>
+<p><b>Analogy:</b> save points in a game: you can always return to a previous save.</p>
+<p><b>Common mistake:</b> editing files on the server outside Git — the changes get lost on the next deploy.</p>
+<p><b>In Wayan:</b> all code and templates live in Git; updating = <code>git pull</code> + tests + deploy.</p>
+</div></details>
+
+<details><summary>GitHub</summary><div class="body">
+<p><b>What it is:</b> a website that hosts Git repositories.</p>
+<p><b>Why:</b> your repository is reachable from any machine; you can fork other people's projects.</p>
+<p><b>Analogy:</b> a cloud drive, but for code and with full history.</p>
+<p><b>Common mistake:</b> committing a secret to a public repo. The key is instantly compromised — revoke it.</p>
+<p><b>In Wayan:</b> the install runs straight from <code>github.com/wayanonchain/wayan-claude-install</code>.</p>
+</div></details>
+
+<details><summary>Repository</summary><div class="body">
+<p><b>What it is:</b> a project folder managed by Git: the files plus their entire history.</p>
+<p><b>Why:</b> the unit of work: clone the repository — get the whole project.</p>
+<p><b>Analogy:</b> a binder containing every draft of every version of a document.</p>
+<p><b>Common mistake:</b> running install commands from outside the repository folder.</p>
+<p><b>In Wayan:</b> on the server the repository lives at <code>/root/wayan-claude-install</code>.</p>
+</div></details>
+
+<details><summary>Commit</summary><div class="body">
+<p><b>What it is:</b> a recorded "snapshot" of changes with a note about what changed and why.</p>
+<p><b>Why:</b> every step of history has a name and can be reverted.</p>
+<p><b>Analogy:</b> a logbook entry: date, what was done, by whom.</p>
+<p><b>Common mistake:</b> one giant commit called "fixed everything". Small, meaningful commits are easier to revert.</p>
+<p><b>In Wayan:</b> "teaching" an agent is also commits: new rules and knowledge enter history.</p>
+</div></details>
+
+<details><summary>Push / Pull</summary><div class="body">
+<p><b>What it is:</b> <code>push</code> — send your commits to GitHub; <code>pull</code> — fetch new ones to yourself.</p>
+<p><b>Why:</b> that's how your local copy and GitHub stay in sync.</p>
+<p><b>Analogy:</b> sending and receiving parcels between your desk and the warehouse.</p>
+<p><b>Common mistake:</b> forgetting to <code>pull</code> on the server and wondering why there are "no updates".</p>
+<p><b>In Wayan:</b> <code>scripts/update.sh</code> does the pull + tests for you.</p>
+</div></details>
+
+<details><summary>Branch</summary><div class="body">
+<p><b>What it is:</b> a parallel line of history inside a repository.</p>
+<p><b>Why:</b> experiment without breaking the main version (<code>main</code>).</p>
+<p><b>Analogy:</b> a draft kept apart from the final copy: finish it, check it — then merge it in.</p>
+<p><b>Common mistake:</b> living in your own branch for months and accumulating conflicts with main.</p>
+<p><b>In Wayan:</b> installs and deploys run from the <code>main</code> branch.</p>
+</div></details>
+
+<details><summary>Docker</summary><div class="body">
+<p><b>What it is:</b> running programs in isolated "containers" with their whole environment.</p>
+<p><b>Why:</b> the program brings everything it needs — no conflicts with the system.</p>
+<p><b>Analogy:</b> food in a lunchbox: reheat it anywhere, no dishes required.</p>
+<p><b>Common mistake:</b> exposing a container's port to the whole internet (<code>0.0.0.0</code>) instead of localhost.</p>
+<p><b>In Wayan:</b> OpenViking runs in Docker and listens only on <code>127.0.0.1:1933</code>.</p>
+</div></details>
+
+<details><summary>systemd</summary><div class="body">
+<p><b>What it is:</b> the Linux service manager: starts programs at boot and restarts crashed ones.</p>
+<p><b>Why:</b> the agents must survive a server reboot without your help.</p>
+<p><b>Analogy:</b> the building superintendent: turns the lights on, resets tripped breakers.</p>
+<p><b>Common mistake:</b> starting a program by hand in a terminal and closing it — the program dies with the session.</p>
+<p><b>In Wayan:</b> <code>wayan-jupiter.service</code> and <code>wayan-uran.service</code> are managed by systemd.</p>
+</div></details>
+
+<details><summary>Service</summary><div class="body">
+<p><b>What it is:</b> a program under systemd's management: background, auto-started, observable.</p>
+<p><b>Why:</b> uniform commands: <code>start</code> / <code>stop</code> / <code>restart</code> / <code>status</code> + logs in journald.</p>
+<p><b>Analogy:</b> an appliance on a breaker-protected outlet: trips — the breaker brings it back.</p>
+<p><b>Common mistake:</b> editing the env file and forgetting <code>systemctl restart</code> — settings are read at startup.</p>
+<p><b>In Wayan:</b> <code>systemctl status wayan-jupiter.service</code> is the first thing to check when in doubt.</p>
+</div></details>
+
+<details><summary>Environment variable</summary><div class="body">
+<p><b>What it is:</b> a named value a program reads at startup (<code>KEY=value</code>).</p>
+<p><b>Why:</b> settings and secrets live outside the code — code is public, values are private.</p>
+<p><b>Analogy:</b> sticky notes on the fridge for the housekeeper: instructions separate from the work itself.</p>
+<p><b>Common mistake:</b> quotes/spaces around the value (<code>TOKEN = "abc"</code>) — write <code>TOKEN=abc</code>.</p>
+<p><b>In Wayan:</b> all agent settings live in <code>/etc/wayan-jupiter.env</code> and <code>/etc/wayan-uran.env</code>.</p>
+</div></details>
+
+<details><summary>API key</summary><div class="body">
+<p><b>What it is:</b> a secret string by which a service recognizes you and charges your account.</p>
+<p><b>Why:</b> Groq and OpenAI only work with a key.</p>
+<p><b>Analogy:</b> a bank card: whoever holds it, pays with it. Not a "password" — a card.</p>
+<p><b>Common mistake:</b> pasting the key into a chat/screenshot/GitHub. Leaked — revoke immediately.</p>
+<p><b>In Wayan:</b> keys live only in env files (permissions 600) and <code>ov.conf</code> — never in Git.</p>
+</div></details>
+
+<details><summary>Telegram bot</summary><div class="body">
+<p><b>What it is:</b> a program-account in Telegram, controlled by your server.</p>
+<p><b>Why:</b> a ready-made interface: chat, voice, files — no app development.</p>
+<p><b>Analogy:</b> your system's front desk: all communication goes through it.</p>
+<p><b>Common mistake:</b> using one token for both agents — Uran stops being an independent channel.</p>
+<p><b>In Wayan:</b> two bots: one for Jupiter, one for Uran, tokens in separate env files.</p>
+</div></details>
+
+<details><summary>BotFather</summary><div class="body">
+<p><b>What it is:</b> Telegram's official bot that creates other bots.</p>
+<p><b>Why:</b> the only legitimate way to get a bot token.</p>
+<p><b>Analogy:</b> the passport office for bots.</p>
+<p><b>Common mistake:</b> falling for a fake "BotFather". The real one is @BotFather with a verified badge.</p>
+<p><b>In Wayan:</b> <code>/newbot</code> twice — once for Jupiter, once for Uran.</p>
+</div></details>
+
+<details><summary>Claude Code</summary><div class="body">
+<p><b>What it is:</b> Anthropic's agentic environment: the Claude model + tools (terminal, files) in a CLI.</p>
+<p><b>Why:</b> this is the agents' brain — it doesn't just answer, it acts.</p>
+<p><b>Analogy:</b> not a "reference book" but an intern with computer access: reads, writes, runs.</p>
+<p><b>Common mistake:</b> logging in as root. The login must happen as the <code>wayan</code> user — services run as it.</p>
+<p><b>In Wayan:</b> the gateway calls <code>claude -p</code> for every task arriving from Telegram.</p>
+</div></details>
+
+<details><summary>Groq</summary><div class="body">
+<p><b>What it is:</b> an ultra-fast inference service; we use its Whisper — speech recognition.</p>
+<p><b>Why:</b> voice notes and video audio become text in seconds.</p>
+<p><b>Analogy:</b> a stenographer who gets through an hour of audio in half a minute.</p>
+<p><b>Common mistake:</b> putting the Groq key in the wrong env (you need it in both, if both agents should hear).</p>
+<p><b>In Wayan:</b> <code>GROQ_API_KEY</code> in the env; the model is <code>whisper-large-v3-turbo</code>.</p>
+</div></details>
+
+<details><summary>OpenAI embeddings</summary><div class="body">
+<p><b>What it is:</b> turning text into a vector of numbers where similar meaning = nearby vectors.</p>
+<p><b>Why:</b> that's how memory searches "similar in meaning" rather than word matches.</p>
+<p><b>Analogy:</b> coordinates on a "map of meanings": neighboring points are related thoughts.</p>
+<p><b>Common mistake:</b> not funding the OpenAI balance — memory silently fails to store.</p>
+<p><b>In Wayan:</b> OpenViking uses <code>text-embedding-3-small</code> + <code>gpt-4o-mini</code>.</p>
+</div></details>
+
+<details><summary>OpenViking</summary><div class="body">
+<p><b>What it is:</b> a semantic memory server, running in Docker on your VPS.</p>
+<p><b>Why:</b> long-term memory: "find similar past cases" works through it.</p>
+<p><b>Analogy:</b> a librarian who remembers every book by its content, not by its spine.</p>
+<p><b>Common mistake:</b> exposing its port to the internet. It must listen on localhost only.</p>
+<p><b>In Wayan:</b> <code>127.0.0.1:1933</code>, memory shared by Jupiter and Uran, data in <code>~/.openviking</code>.</p>
+</div></details>
+
+<details><summary>Semantic memory</summary><div class="body">
+<p><b>What it is:</b> memory that answers "what was that about?", not "where is this exact phrase?".</p>
+<p><b>Why:</b> the agent recalls what's relevant without re-reading every file every time.</p>
+<p><b>Analogy:</b> human memory: you remember the gist of a conversation, not the transcript.</p>
+<p><b>Common mistake:</b> dumping everything into memory — garbage in, garbage out.</p>
+<p><b>In Wayan:</b> short, important entries are stored; the source of truth stays in Markdown+Git.</p>
+</div></details>
+
+<details><summary>Markdown</summary><div class="body">
+<p><b>What it is:</b> a text format with light markup: <code># heading</code>, <code>- list</code>, <code>**bold**</code>.</p>
+<p><b>Why:</b> equally readable by a human, an agent, and Git; depends on no particular app.</p>
+<p><b>Analogy:</b> the pen and paper of the digital world: it will outlive every trendy app.</p>
+<p><b>Common mistake:</b> keeping knowledge in proprietary formats the agent can't read.</p>
+<p><b>In Wayan:</b> rules, skills, memory, transcripts — all of it is Markdown files.</p>
+</div></details>
+
+<details><summary>Obsidian</summary><div class="body">
+<p><b>What it is:</b> a free app for working with a folder of Markdown notes (a "vault").</p>
+<p><b>Why:</b> the comfortable human interface for reading, editing, and linking the agents' knowledge.</p>
+<p><b>Analogy:</b> a reading room above the archive: same documents, nicer to work with.</p>
+<p><b>Common mistake:</b> thinking Obsidian "stores" the data. It only displays ordinary files.</p>
+<p><b>In Wayan:</b> open the knowledge folder as a vault — and see everything the agents have built.</p>
+</div></details>
+
+<details><summary>ffmpeg</summary><div class="body">
+<p><b>What it is:</b> the universal command-line audio/video converter.</p>
+<p><b>Why:</b> it pulls keyframes out of videos so Claude can "see" them.</p>
+<p><b>Analogy:</b> a Swiss army knife for media: cut, compress, convert.</p>
+<p><b>Common mistake:</b> enabling visual video analysis without installing ffmpeg — the agent will honestly tell you.</p>
+<p><b>In Wayan:</b> <code>VIDEO_VISUAL_ANALYSIS=true</code> + ffmpeg = videos get analyzed visually too.</p>
+</div></details>
+
+<details><summary>Webhook</summary><div class="body">
+<p><b>What it is:</b> event delivery where the service itself knocks on your address with an HTTP request.</p>
+<p><b>Why:</b> instant delivery, but it requires an open port — which is attack surface.</p>
+<p><b>Analogy:</b> a courier ringing your doorbell — convenient, but your door must face the street.</p>
+<p><b>Common mistake:</b> leaving the webhook port open to the whole internet.</p>
+<p><b>In Wayan:</b> the agents <b>don't use</b> webhooks (see polling). The legacy bot's public webhook port 8080 existed once — closed in phase M6.</p>
+</div></details>
+
+<details><summary>Polling</summary><div class="body">
+<p><b>What it is:</b> the program itself periodically asks the server: "any new messages?"</p>
+<p><b>Why:</b> no ports need to be opened — outbound requests are safer than inbound ones.</p>
+<p><b>Common mistake:</b> assuming polling is "slow" — long polling delivers messages almost instantly.</p>
+<p><b>Analogy:</b> checking your own mailbox instead of giving the courier a key to your door.</p>
+<p><b>In Wayan:</b> both agents receive Telegram messages via long polling. Open ports: zero.</p>
+</div></details>
+
+<details><summary>Firewall</summary><div class="body">
+<p><b>What it is:</b> a network connection filter: which ports are open, which are closed.</p>
+<p><b>Why:</b> everything that shouldn't be reachable from the internet must be closed.</p>
+<p><b>Analogy:</b> security at the entrance: only people on the list get in.</p>
+<p><b>Common mistake:</b> opening a port "just for a minute to test" and forgetting it.</p>
+<p><b>In Wayan:</b> ufw: essentially only SSH is open; the legacy bot's 8080 rule was removed.</p>
+</div></details>
+
+<details><summary>No-clobber</summary><div class="body">
+<p><b>What it is:</b> a copy mode that "never overwrites what exists" (<code>cp -n</code>).</p>
+<p><b>Why:</b> re-running the installer never wipes your edited templates, rules, or memory.</p>
+<p><b>Analogy:</b> a mover who brings in the missing furniture but never touches what you've already arranged.</p>
+<p><b>Common mistake:</b> expecting a re-install to "update" a file you edited — no, your edits win.</p>
+<p><b>In Wayan:</b> the installer and WAYAN_PACK packs copy everything no-clobber only.</p>
+</div></details>
+
+<details><summary>Deploy</summary><div class="body">
+<p><b>What it is:</b> delivering a new code version into production.</p>
+<p><b>Why:</b> so "updating the agents" is one verifiable procedure, not ad-hoc edits.</p>
+<p><b>Analogy:</b> printing a new edition of a book: proofread it — then replace it on the shelves.</p>
+<p><b>Common mistake:</b> "deploying" by editing a file directly on the server. That's exactly what drift is.</p>
+<p><b>In Wayan:</b> <code>scripts/deploy-gateway.sh</code>: backup → sync → verify → restart.</p>
+</div></details>
+
+<details><summary>Rollback</summary><div class="body">
+<p><b>What it is:</b> returning to the previous working version after a failed update.</p>
+<p><b>Why:</b> any update can break — there must be a way back within minutes.</p>
+<p><b>Analogy:</b> "undo" in an editor, but for the whole server.</p>
+<p><b>Common mistake:</b> having no backup and fixing a broken system "forward", in a panic.</p>
+<p><b>In Wayan:</b> every deploy leaves <code>/opt/wayan-*/gateway.bak.DATE</code> — rollback = restore the folder and restart.</p>
+</div></details>
+
+<details><summary>WAYAN_PACK</summary><div class="body">
+<p><b>What it is:</b> the environment variable that selects a profession pack at install time.</p>
+<p><b>Why:</b> one installer — different specializations: onchain, creator, devops, student, founder.</p>
+<p><b>Analogy:</b> a car trim level: same base, options for your scenario.</p>
+<p><b>Common mistake:</b> forgetting <code>-E</code> in <code>sudo -E</code> — sudo swallows the variable and the pack isn't applied.</p>
+<p><b>In Wayan:</b> <code>WAYAN_PACK=creator sudo -E ./install.sh</code>. Without the variable — a plain install.</p>
+</div></details>
+
+<details><summary>Drift</summary><div class="body">
+<p><b>What it is:</b> divergence between the code in Git and the code actually running in production.</p>
+<p><b>Why it matters:</b> drift is the silent enemy: "it worked yesterday" and nobody knows why.</p>
+<p><b>Analogy:</b> the blueprint says one thing, but someone has already welded something else onto the machine.</p>
+<p><b>Common mistake:</b> "I'll quickly fix it on the server and move it to Git later" — and never moving it.</p>
+<p><b>In Wayan:</b> <code>bash scripts/deploy-gateway.sh --check</code> — a PASS/FAIL drift report (file names only).</p>
+</div></details>
+<!-- ================= 7. INSTALLATION PATHS ================= -->
+<h2 id="s7">7. Three installation paths</h2>
+
+<h3>Path A. From a Mac (or any computer) to your own VPS — recommended for beginners</h3>
+<p>Your computer is the remote control; everything installs onto the server. First check your
+tools (both ship with macOS; on Windows use PowerShell or WSL):</p>
+<div class="cmd">git --version</div>
+<div class="cmd">ssh -V</div>
+<p>Connect to the server (the IP and password come from your VPS provider):</p>
+<div class="cmd">ssh root@SERVER_IP</div>
+<p>To stop typing the password every time, create an SSH key. <b>The key belongs to you</b>
+(to your client computer) — not to Wayan and not to the server: the private half never leaves
+your laptop; only the public half is copied to the server.</p>
+<div class="cmd">ssh-keygen -t ed25519 -C "my-wayan-key"</div>
+<div class="cmd">ssh-copy-id root@SERVER_IP</div>
+<p>Then add a convenient alias to <code>~/.ssh/config</code>:</p>
+<div class="cmd">Host wayan-vps
+    HostName SERVER_IP
+    User root
+    IdentityFile ~/.ssh/id_ed25519</div>
+<p>From now on, connecting is just <code>ssh wayan-vps</code>.</p>
+<div class="info-card"><b>Cursor / VS Code Remote-SSH.</b> If you install the Remote-SSH extension
+(or use Cursor), you can open server files as if they were local — handy for editing templates
+and reading logs. It's optional: everything in this guide also works in a plain terminal.</div>
+
+<h3>Path B. Directly on the VPS</h3>
+<p>If your provider offers a web console (a terminal in the browser), you can skip SSH from your
+computer entirely: open the console in the provider's dashboard and run the same install commands
+from <a href="#s8">section 8</a>, starting at step 4. Downside: a browser console is clumsy for
+longer work — path A is worth learning eventually anyway.</p>
+
+<h3>Path C. Fork and customize the repo — for developers</h3>
+<ol>
+  <li><b>Fork</b> the <code>wayanonchain/wayan-claude-install</code> repository on GitHub.</li>
+  <li>Rewrite the templates for yourself: <code>templates/jupiter/CLAUDE.md</code>, <code>templates/uran/CLAUDE.md</code>, USER.md, skills.</li>
+  <li>Add or modify packs in <code>packs/</code> (see <a href="#s9">section 9</a> and <code>docs/PACKS.md</code>).</li>
+  <li>Install from your own fork: change <code>REPO_URL</code> in <code>install.sh</code>, or clone the fork and run locally.</li>
+  <li><b>Never commit secrets</b>: env files, tokens, <code>ov.conf</code>, <code>accounts.md</code> — all already covered by <code>.gitignore</code>; don't work around it.</li>
+</ol>
+
+<!-- ================= 8. STEP BY STEP ================= -->
+<h2 id="s8">8. Step-by-step installation</h2>
+<p>18 steps from zero to a fully verified system. For each: the command, what it means, the
+expected output, and the common error. Don't rush: verify each step before moving to the next.</p>
+
+<div class="step"><h3>Step 1. GitHub account</h3>
+<p><b>What:</b> sign up at <a href="https://github.com">github.com</a>.
+<b>Why:</b> the system installs from here; later your knowledge base and your fork live here too.</p>
+<p><b>Verify:</b> you can open <code>github.com/wayanonchain/wayan-claude-install</code> and see the code.
+<b>Common mistake:</b> postponing it — without GitHub there's no path C and no knowledge export.</p></div>
+
+<div class="step"><h3>Step 2. Create a VPS</h3>
+<p><b>What:</b> with any provider, create a server: Ubuntu <b>22.04 or 24.04</b>, at least 1 GB,
+ideally <b>2 GB RAM</b>. Write down the IP and the root password.</p>
+<p><b>Why:</b> this is the agents' home. <b>Verify:</b> the server shows "running" and you know its IP.</p>
+<p><b>Common mistake:</b> picking a different OS (Debian, CentOS) — the installer supports only Ubuntu 22.04/24.04 and will honestly refuse.</p></div>
+
+<div class="step"><h3>Step 3. Connect over SSH</h3>
+<div class="cmd">ssh root@SERVER_IP</div>
+<p><b>What:</b> you're entering the server. On first connect, accept the fingerprint (yes), then enter the password.</p>
+<p><b>Expected:</b> a prompt like <code>root@hostname:~#</code> — commands now run on the server.</p>
+<p><b>Common mistake:</b> <code>Permission denied</code> — a typo in the password or IP; "connection timed out" — the server is still provisioning or the IP is wrong.</p></div>
+
+<div class="step"><h3>Step 4. Install Wayan Agents</h3>
+<p><b>Option 1 — one command (faster):</b></p>
+<div class="cmd">curl -fsSL https://raw.githubusercontent.com/wayanonchain/wayan-claude-install/main/install.sh | sudo bash</div>
+<p><b>Option 2 — from a clone (you can read what you're running; required for WAYAN_PACK):</b></p>
+<div class="cmd">git clone https://github.com/wayanonchain/wayan-claude-install.git
+cd wayan-claude-install
+sudo ./install.sh</div>
+<p><b>What happens:</b> packages, Node.js, and Claude Code are installed; the <code>wayan</code> user is created;
+workspaces, the gateway, and systemd services are set up. The installer is <b>idempotent</b> —
+running it again breaks nothing and never overwrites your edits (no-clobber).</p>
+<p><b>Expected:</b> a green final banner "installation complete" with a NEXT STEPS section.</p>
+<p><b>Common mistake:</b> running without <code>sudo</code> → "This installer must run as root". Want a profession pack — read <a href="#s9">section 9</a> before this step.</p></div>
+
+<div class="step"><h3>Step 5. Create two bots with BotFather</h3>
+<p><b>What:</b> in Telegram, open <b>@BotFather</b> → <code>/newbot</code> → a name and username for Jupiter; repeat for Uran.
+Save both tokens (format <code>123456:ABC-DEF...</code>).</p>
+<p><b>Why two:</b> Uran is the independent channel; if Jupiter's bot is unreachable, you still have a line to the server.</p>
+<p><b>Common mistake:</b> swapping the tokens — "Jupiter" will answer in Uran's chat and vice versa.</p></div>
+
+<div class="step"><h3>Step 6. Put the tokens into the env files</h3>
+<div class="cmd">sudoedit /etc/wayan-jupiter.env</div>
+<p>Find the line and paste the token (no quotes, no spaces):</p>
+<div class="cmd">TELEGRAM_BOT_TOKEN=YOUR_BOT_TOKEN</div>
+<div class="cmd">sudoedit /etc/wayan-uran.env</div>
+<p><b>Why:</b> the gateway reads the token from the env at startup — that file is the only place it lives.</p>
+<p><b>Common mistake:</b> editing and forgetting to restart the service (step 12) — the env is read only at startup.</p></div>
+
+<div class="step"><h3>Step 7. Log in to Claude Code as the wayan user</h3>
+<div class="cmd">sudo -u wayan -i
+claude</div>
+<p><b>What:</b> become the <code>wayan</code> user and run <code>claude</code> — complete the browser login flow
+(a Pro/Max subscription is required). Then leave claude and return to root: <code>exit</code>.</p>
+<p><b>Why:</b> the services run as <code>wayan</code> — a root login is invisible to them.</p>
+<p><b>Expected:</b> <code>claude --version</code> works; launching <code>claude</code> again doesn't ask for login.</p>
+<p><b>Common mistake:</b> logging in as root: the agents will reply with an error to every message.</p></div>
+
+<div class="step"><h3>Step 8. Add the Groq key (voice)</h3>
+<div class="cmd">sudoedit /etc/wayan-jupiter.env</div>
+<div class="cmd">GROQ_API_KEY=YOUR_GROQ_KEY</div>
+<p>Repeat for <code>/etc/wayan-uran.env</code> if Uran should understand voice too.</p>
+<p><b>Why:</b> without the key, voice messages are politely declined; text keeps working normally.</p>
+<p><b>Common mistake:</b> creating the key but never checking limits/balance at console.groq.com.</p></div>
+
+<div class="step"><h3>Step 9. OpenAI key for memory</h3>
+<p><b>What:</b> create a key at platform.openai.com and <b>fund the balance with at least $5</b> —
+with no funds, embeddings don't work and memory can't store anything.</p>
+<p><b>Where it goes:</b> into the OpenViking config <code>/home/wayan/.openviking/ov.conf</code> (next step) —
+<b>not</b> into the agents' env files, and certainly not into Git.</p>
+<p><b>Common mistake:</b> key exists, balance is $0 → <code>memory_store</code> fails with a cryptic quota error.</p></div>
+
+<div class="step"><h3>Step 10. Install and start OpenViking</h3>
+<p><b>What:</b> OpenViking is deployed in Docker following <code>docs/OPENVIKING_MEMORY.md</code>:
+the <code>ov.conf</code> config (your OpenAI key + a local <code>root_api_key</code>, permissions 600, owner wayan)
+and a docker compose setup in <code>/home/wayan/.openviking</code>.</p>
+<div class="cmd">cd /home/wayan/.openviking && docker compose up -d</div>
+<p><b>Critical:</b> the port is published <b>only</b> as <code>127.0.0.1:1933</code> — never <code>0.0.0.0</code>. Check:</p>
+<div class="cmd">curl -s http://127.0.0.1:1933/health</div>
+<p><b>Expected:</b> a healthy status reply. <b>Common mistake:</b> Docker missing (<code>docker: command not found</code>) —
+install it via the official guide at docs.docker.com; or the port exposed publicly — check <code>docker ps</code>: PORTS must say <code>127.0.0.1:1933</code>.</p></div>
+
+<div class="step"><h3>Step 11. Connect memory to Claude (MCP tools)</h3>
+<p><b>What:</b> following <code>docs/OPENVIKING_MEMORY.md</code>, connect the memory MCP tools to the wayan
+user's Claude Code — the agents gain <code>memory_store</code>, <code>memory_recall</code>, <code>memory_health</code>.</p>
+<p><b>Why:</b> this is the bridge between the brain (Claude) and the memory (OpenViking). The agents'
+permission profiles already allow these tools.</p>
+<p><b>Common mistake:</b> connecting them as root instead of wayan — the agents won't see the tools.</p></div>
+
+<div class="step"><h3>Step 12. Start and test Jupiter</h3>
+<div class="cmd">systemctl start wayan-jupiter.service
+systemctl status wayan-jupiter.service</div>
+<p><b>Expected:</b> <code>active (running)</code>. Message the Jupiter bot "hello" in Telegram —
+you get an instant ack "✅ Task received. Queue position: 1", then the reply.</p>
+<p><b>Common mistake:</b> silence → wrong token, or the service wasn't restarted after editing the env:
+<code>systemctl restart wayan-jupiter.service</code>; logs: <code>journalctl -u wayan-jupiter.service -e</code>.</p></div>
+
+<div class="step"><h3>Step 13. Start and test Uran</h3>
+<div class="cmd">systemctl start wayan-uran.service
+systemctl status wayan-uran.service</div>
+<p>Message the Uran bot: <i>"Check the server status"</i> — it should answer with diagnostics.</p>
+<p><b>Why now:</b> Uran is your safety net; test it before you need it for the first time.</p></div>
+
+<div class="step"><h3>Step 14. Test memory: store and recall</h3>
+<p>Message Jupiter: <i>"Remember: my timezone is Bali (UTC+8)"</i> — the agent stores it via
+<code>memory_store</code>. Then: <i>"What do you remember about my timezone?"</i> — it should recall via
+<code>memory_recall</code>. Bonus check: ask <b>Uran</b> the same question — the memory is shared, so it should know too.</p>
+<p><b>Common mistake:</b> an OpenAI quota error (see step 9) or OpenViking not running (step 10).</p></div>
+
+<div class="step"><h3>Step 15. Test voice</h3>
+<p>Send Jupiter a voice message. <b>Expected:</b> a transcript arrives (📝 …), then a normal reply about what you said.</p>
+<p><b>Common mistake:</b> "voice is disabled" → no <code>GROQ_API_KEY</code> in the env, or the service wasn't restarted.</p></div>
+
+<div class="step"><h3>Step 16. Test PDF</h3>
+<p>Send a PDF with the caption <i>"Summarize this"</i>. <b>Expected:</b> a structured breakdown,
+and a Markdown transcript appears in the workspace's <code>transcripts/</code>.</p>
+<p><b>Common mistake:</b> a file over ~20 MB — Telegram's bot download limit; the agent itself will suggest sending a direct link.</p></div>
+
+<div class="step"><h3>Step 17. Test visual video analysis</h3>
+<p>Enable the feature (off by default) and make sure ffmpeg exists:</p>
+<div class="cmd">apt-get install -y ffmpeg
+sudoedit /etc/wayan-jupiter.env   # VIDEO_VISUAL_ANALYSIS=true
+systemctl restart wayan-jupiter.service</div>
+<p>Send a short video with the caption <i>"Analyze this: what's visible and what's said"</i>.
+<b>Expected:</b> "🎥 Video received…", then one merged reply with Audio / Visual / Combined parts.</p>
+<p><b>Common mistake:</b> ffmpeg missing — the agent says so explicitly and falls back to audio-only (no silent failures).</p></div>
+
+<div class="step"><h3>Step 18. Verify the repo-first deploy loop</h3>
+<div class="cmd">cd /root/wayan-claude-install
+bash scripts/update.sh
+bash scripts/deploy-gateway.sh --check</div>
+<p><b>Expected:</b> tests green, drift report — <b>PASS</b> (production matches Git).</p>
+<p><b>Why:</b> you've just verified the system's main maintenance mechanism. If it's PASS — the install finished correctly.</p></div>
+
+<div class="ok-card"><b>✅ Everything passed?</b> Congratulations — the system is built. Next: pick a
+<a href="#s9">profession pack</a>, understand <a href="#s10">memory</a>, and <a href="#s12">teach the agents</a> to work your way.
+Quick whole-system self-check: <code>sudo bash scripts/healthcheck.sh</code>.</div>
+<!-- ================= 9. WAYAN_PACK ================= -->
+<h2 id="s9">9. WAYAN_PACK: profession packs</h2>
+
+<p>A <b>pack</b> is a profession preset chosen at install time. Technically it's a set of Markdown
+files layered on top of the normal install: a role emphasis (<code>PACK.md</code>), a memory seed,
+task-routing rules, and a services map. Packs exist so the agent "thinks" in your profession
+from day one instead of being tuned for weeks.</p>
+
+<div class="info-card"><b>Three pack guarantees.</b>
+1) It's <b>Markdown only</b> — no new services, keys, or permissions.
+2) <b>No-clobber</b>: a pack never overwrites existing files — your edits always win.
+3) Without <code>WAYAN_PACK</code> the install is <b>identical to the plain one</b> — packs change nothing until you ask for them.</div>
+
+<div class="cmd">sudo ./install.sh</div>
+<div class="cmd">WAYAN_PACK=onchain sudo -E ./install.sh</div>
+<div class="cmd">WAYAN_PACK=creator sudo -E ./install.sh</div>
+<div class="cmd">WAYAN_PACK=devops sudo -E ./install.sh</div>
+<div class="cmd">WAYAN_PACK=student sudo -E ./install.sh</div>
+<div class="cmd">WAYAN_PACK=founder sudo -E ./install.sh</div>
+<p class="meta">The <code>-E</code> flag is required: it passes the variable through sudo. A typo in the pack
+name is safe — the installer refuses <i>before</i> changing anything and prints the list of available packs.</p>
+
+<div class="packgrid">
+  <div class="panel gold-edge"><h4>🪙 onchain — crypto analyst</h4>
+  <p class="meta">Trader, analyst, alpha-channel owner. This is Wayan's "native" profile, formalized as a pack.</p>
+  <p><b>Jupiter:</b> token and smart-money breakdowns, watch/avoid/deep-dive verdicts, threads from research.<br>
+  <b>Uran:</b> health of the data pipeline and the server.</p>
+  <p><b>Examples:</b> "break down token X", "which smart money entered this week", "make an X thread from this research".</p></div>
+
+  <div class="panel gold-edge"><h4>🎬 creator — content creator</h4>
+  <p class="meta">Solo creator: TikTok / Reels / X / YouTube.</p>
+  <p><b>Jupiter:</b> hooks, scripts, repurposing (1 long video → N shorts), brand voice from memory.<br>
+  <b>Uran:</b> health of the publishing pipeline (voice → text → drafts).</p>
+  <p><b>Examples:</b> a voice-note idea → a Reels script, "repack this video into 5 shorts", a weekly content plan.</p></div>
+
+  <div class="panel gold-edge"><h4>🛠 devops — developer / DevOps</h4>
+  <p class="meta">Solo dev or a small team running their own services.</p>
+  <p><b>Jupiter:</b> code, log and diff analysis, PR descriptions, incident reports.<br>
+  <b>Uran:</b> first-line SRE: statuses, journals, restarts strictly by allowlist.</p>
+  <p><b>Examples:</b> "why did service X die", "write a PR description from this diff", "weekly infra report".</p></div>
+
+  <div class="panel gold-edge"><h4>🎓 student — researcher / student</h4>
+  <p class="meta">Student, analyst, lifelong learner.</p>
+  <p><b>Jupiter:</b> PDF and lecture summaries with sources and page numbers, flashcards, a topic map.<br>
+  <b>Uran:</b> "library" operations: the file pipeline, order in transcripts/.</p>
+  <p><b>Examples:</b> PDF → summary + open questions, lecture → structured notes, "what do I already know about X".</p></div>
+
+  <div class="panel gold-edge"><h4>🚀 founder — startup founder</h4>
+  <p class="meta">An early-stage founder doing everything at once.</p>
+  <p><b>Jupiter:</b> investor memos (always DRAFT), sourced market research, interview notes.<br>
+  <b>Uran:</b> operations: checklists, digests, confidential-data hygiene.</p>
+  <p><b>Examples:</b> a call recording → structured notes, "build a competitor one-pager", "weekly digest".</p></div>
+</div>
+
+<h3>What files each pack adds</h3>
+<table>
+  <tr><th>Pack file</th><th>Copied to (no-clobber)</th></tr>
+  <tr><td><code>jupiter/PACK.md</code>, <code>uran/PACK.md</code></td><td>The agent's workspace root — the agent reads it at session start (a hook in CLAUDE.md).</td></tr>
+  <tr><td><code>memory/cold.md</code></td><td><code>orchestration/memory/cold.md</code> — a profession-shaped memory seed.</td></tr>
+  <tr><td><code>rules/&lt;pack&gt;-routing.md</code></td><td><code>orchestration/rules/</code> — task routing and hard rules.</td></tr>
+  <tr><td><code>mapping/&lt;pack&gt;-services.md</code></td><td><code>orchestration/mapping/</code> — the profession's services/tools map.</td></tr>
+</table>
+<p>Details: <code>docs/PACKS.md</code> (the installer mechanics, creating your own pack, switching packs manually)
+and <code>docs/PROFESSION_PACKS.md</code> (the catalog of 8 professions — design ideas, including future ones).</p>
+
+<!-- ================= 10. MEMORY ================= -->
+<h2 id="s10">10. How memory works</h2>
+
+<p>Memory has three layers. Each solves its own problem, and it matters who's in charge.</p>
+
+<div class="diagram">Layer 1 · MARKDOWN     source of truth, human-readable
+        ↓ commit
+Layer 2 · GITHUB       version history, backup, template control
+        ↓ indexing
+Layer 3 · OPENVIKING   semantic "by meaning" search</div>
+
+<table>
+  <tr><th>Layer</th><th>What it does</th><th>If it disappears</th></tr>
+  <tr><td><b>1. Markdown files</b></td><td>Canonical knowledge: rules, skills, memory, transcripts. Any file opens in any editor.</td><td>Knowledge is lost — which is why layer 2 exists.</td></tr>
+  <tr><td><b>2. GitHub</b></td><td>History of every edit, rollback, rebuild on a new machine, public/private template control.</td><td>No versions or backup, but the files survive.</td></tr>
+  <tr><td><b>3. OpenViking</b></td><td>Finds what's relevant by meaning, without loading everything into context.</td><td><b>Nothing terrible</b>: it's a derived index, rebuilt from the Markdown.</td></tr>
+</table>
+
+<h3>What lives inside the workspace</h3>
+<table>
+  <tr><th>Folder/file</th><th>Role</th></tr>
+  <tr><td><code>orchestration/memory/hot.md</code></td><td>"Hot": context of current tasks — changes often.</td></tr>
+  <tr><td><code>orchestration/memory/warm.md</code></td><td>"Warm": context of recent weeks — projects in flight.</td></tr>
+  <tr><td><code>orchestration/memory/cold.md</code></td><td>"Cold": stable facts — who you are, goals, preferences. WAYAN_PACK packs seed exactly this file.</td></tr>
+  <tr><td><code>orchestration/learnings/</code></td><td>Raw lessons from feedback ("remember", "don't do that") → inbox → after review → reviewed.</td></tr>
+  <tr><td><code>orchestration/rules/</code></td><td>Hard rules: safety, skill routing, the services map.</td></tr>
+  <tr><td><code>orchestration/mapping/</code></td><td>The map of your infrastructure: services, accounts (names, not secrets!).</td></tr>
+  <tr><td><code>skills/</code></td><td>Skill playbooks: how to break down a token, make content, analyze files, etc.</td></tr>
+  <tr><td><code>transcripts/</code></td><td>Markdown transcripts of all processed media — long-lived.</td></tr>
+</table>
+
+<h3>What belongs in memory — and what doesn't</h3>
+<table>
+  <tr><th>✅ Into memory</th><th>🚫 Not into memory</th></tr>
+  <tr>
+    <td>Stable facts (timezone, goals, conventions)<br>Approved decisions and lessons<br>Condensed summaries of analyses</td>
+    <td><b>Secrets, keys, tokens — never</b><br>Raw media files<br>Full private logs/chats without explicit approval<br>Long dumps "just in case"</td>
+  </tr>
+</table>
+<div class="warn-card"><b>⚠️ Remember the rule:</b> memory is for meaning — not for secrets and not for junk.
+Secrets live in env files and <code>ov.conf</code>; raw material lives temporarily in <code>uploads/tmp</code> and deletes itself.</div>
+
+<!-- ================= 11. OBSIDIAN ================= -->
+<h2 id="s11">11. Where Obsidian fits</h2>
+
+<p>The simple idea: <b>agents write Markdown — Obsidian shows it beautifully to a human</b>.
+No magic: Obsidian just opens the same folder of files that the agents write and Git stores.</p>
+
+<ul>
+  <li><b>Obsidian is for humans.</b> The agents don't need it: they read the files directly.</li>
+  <li><b>Git stores</b> the same files with history; edit freely — changes get committed.</li>
+  <li>You <b>review and edit</b> notes, link them, prune what's stale.</li>
+  <li>Then — <b>commit to Git</b>: your edits become the official version of the knowledge.</li>
+</ul>
+
+<div class="diagram">Voice / video / PDF
+        ↓
+Markdown transcript (agent)
+        ↓
+You review and edit in Obsidian
+        ↓
+Approved knowledge → commit to Git
+        ↓
+OpenViking indexes → agents recall</div>
+
+<p><b>How to connect it:</b> install Obsidian → "Open folder as vault" → point it at the knowledge
+folder (a local clone of the repo, or a synced transcripts folder). Done: the agents' knowledge base is in front of you.</p>
+
+<!-- ================= 12. TEACHING ================= -->
+<h2 id="s12">12. How to teach the agents</h2>
+
+<p>The agents learn through a <b>safe, human-in-the-loop cycle</b>:</p>
+<ol>
+  <li>You say: <i>"remember: …"</i> / <i>"don't do that"</i> / <i>"fix this"</i>.</li>
+  <li>Durable facts go into memory (memory_store / cold.md).</li>
+  <li>Behavioral lessons get written into <code>learnings/inbox/</code>.</li>
+  <li>On request, the agent <b>proposes</b>: "these lessons should become a rule/skill/memory entry" — as a proposal file, not an edit.</li>
+  <li><b>You approve</b> — and only then is the change applied.</li>
+  <li>The change goes into Git as a commit — learning has history and a rollback.</li>
+</ol>
+
+<div class="info-card"><b>Why so strict?</b>
+<b>No self-editing by default:</b> an agent that rewrites its own rules quickly drifts away from your
+intent — so the permission profiles explicitly forbid the agents from editing their CLAUDE.md, rules,
+skills, and memory without approval. <b>The agent proposes — the human decides:</b> the same logic as
+code review. <b>Secrets are never stored</b>, no matter what you type in the chat. <b>Rules and skills
+change carefully</b>: in small, reversible, versioned steps.</div>
+
+<!-- ================= 13. JUPITER ================= -->
+<h2 id="s13">13. What Jupiter can do</h2>
+
+<table>
+  <tr><th>Area</th><th>Examples</th></tr>
+  <tr><td>Onchain research</td><td>token breakdowns, smart money, flows, risks, watch/avoid/deep-dive verdicts</td></tr>
+  <tr><td>Content</td><td>X threads, Telegram posts, Reels/TikTok scripts, a content calendar</td></tr>
+  <tr><td>Files</td><td>PDF and report summaries, screenshot and image analysis, contracts</td></tr>
+  <tr><td>Voice and video</td><td>voice transcription, visual video analysis (audio + frames)</td></tr>
+  <tr><td>Documents</td><td>HTML pages, structured notes, digests</td></tr>
+  <tr><td>Memory</td><td>recalls past cases and decisions by meaning</td></tr>
+  <tr><td>Market response</td><td>a fast event breakdown + a hot-take post draft</td></tr>
+</table>
+
+<h3>First-day commands</h3>
+<div class="cmd">Analyze the ETH token in the Wayan Onchain style</div>
+<div class="cmd">Break down this PDF and give me a summary</div>
+<div class="cmd">Analyze this video: what is visible and what is said</div>
+<div class="cmd">Remember: never use long dashes in my posts</div>
+<div class="cmd">Write a 45-second Reels script</div>
+<div class="cmd">Search memory for similar cases about Canton</div>
+
+<!-- ================= 14. URAN ================= -->
+<h2 id="s14">14. What Uran can do</h2>
+
+<table>
+  <tr><th>Area</th><th>Examples</th></tr>
+  <tr><td>Server health</td><td>CPU, RAM, disk, swap; an overall health report</td></tr>
+  <tr><td>Logs and statuses</td><td>Jupiter/Uran journals, systemd service statuses</td></tr>
+  <tr><td>Fixing Jupiter</td><td>log-based diagnosis → restart (scoped sudo for exactly that)</td></tr>
+  <tr><td>Memory</td><td>OpenViking health checks (memory_health)</td></tr>
+  <tr><td>Deploys</td><td>Git ↔ production drift checks, post-update state</td></tr>
+  <tr><td>Queue</td><td>diagnosing stuck tasks</td></tr>
+  <tr><td>Security</td><td>permissions, env files, open-ports audit; rollback guidance</td></tr>
+</table>
+
+<h3>First-day commands</h3>
+<div class="cmd">Check the server status</div>
+<div class="cmd">Check Jupiter's logs</div>
+<div class="cmd">Check OpenViking memory_health</div>
+<div class="cmd">Why is Jupiter not responding?</div>
+<div class="cmd">Make a health report</div>
+<div class="cmd">Check the drift between Git and production</div>
+
+<!-- ================= 15. QUEUE & MEDIA ================= -->
+<h2 id="s15">15. Task queue and media behavior</h2>
+
+<h3>The queue</h3>
+<ul>
+  <li><b>Instant ack.</b> Every message is confirmed immediately: "✅ Task received. Queue position: N" — you always know the task was accepted.</li>
+  <li><b>Per-chat queue.</b> Tasks run one at a time, in order — feel free to send several in a row.</li>
+  <li><code>/queue</code> — show the queue; <code>/cancel</code> — drop pending tasks.</li>
+  <li><b>Timeouts are not silence.</b> If a task exceeds its limit, you get "⏱ … Moving on to the next task" and the queue continues.</li>
+  <li><b>The no-silence guarantee.</b> Every outcome — answer, error, timeout — is reported explicitly. Silence = a reason to message Uran.</li>
+  <li><b>Unsupported files</b> get a clear refusal, not a shrug.</li>
+</ul>
+
+<h3>Media</h3>
+<table>
+  <tr><th>You send</th><th>What happens</th></tr>
+  <tr><td>Voice note</td><td>Groq Whisper → transcript (📝) → a normal reply about the content</td></tr>
+  <tr><td>PDF / document</td><td>download → file analysis → reply + Markdown transcript</td></tr>
+  <tr><td>Photo / screenshot</td><td>Claude looks at the image → breakdown</td></tr>
+  <tr><td>Video / video note</td><td>audio transcript + keyframes (if visual analysis is enabled) → one merged review</td></tr>
+  <tr><td>GIF-style video (animation)</td><td>takes the video path; with no audio track the agent honestly says "no sound" and reviews the frames</td></tr>
+</table>
+
+<div class="info-card"><b>Large files.</b> Telegram limits bot downloads (~20 MB).
+For a big video/file — send a <b>direct link</b> (a URL to an .mp4/.pdf etc.): the gateway downloads it safely itself.
+<b>Raw files are temporary:</b> they live in <code>uploads/tmp</code>, become a Markdown transcript, and are deleted — the disk stays clean.</div>
+<!-- ================= 16. REPO-FIRST DEPLOY ================= -->
+<h2 id="s16">16. Updates: repo-first deployment</h2>
+
+<p><b>Why drift is dangerous.</b> If code is edited directly in production, Git stops being the truth:
+the next deploy silently overwrites the edit, there's nothing to roll back to, and debugging becomes
+archaeology. So there is one rule: <b>changes are born in Git</b> and reach the server only through the scripts.</p>
+
+<h3>The correct update cycle</h3>
+<div class="cmd">cd /root/wayan-claude-install</div>
+<div class="cmd">bash scripts/update.sh</div>
+<div class="cmd">sudo bash scripts/deploy-gateway.sh --dry-run</div>
+<div class="cmd">sudo bash scripts/deploy-gateway.sh --check</div>
+<div class="cmd">sudo bash scripts/deploy-gateway.sh --restart</div>
+
+<table>
+  <tr><th>Command</th><th>What it does</th><th>Changes anything?</th></tr>
+  <tr><td><code>update.sh</code></td><td>git pull + the full test suite + a drift check</td><td><span class="tag ok">no</span> repository only</td></tr>
+  <tr><td><code>--dry-run</code></td><td>shows what a deploy <i>would</i> do</td><td><span class="tag ok">no</span></td></tr>
+  <tr><td><code>--check</code></td><td>a Git ↔ production drift report: PASS/FAIL, file names only</td><td><span class="tag ok">no</span></td></tr>
+  <tr><td><code>--restart</code></td><td>backup → sync both /opt trees → import check → service restart → re-verify</td><td><span class="tag wr">yes</span> this is the deploy</td></tr>
+</table>
+
+<h3>Backups and rollback</h3>
+<p>Every deploy automatically leaves a snapshot: <code>/opt/wayan-*/gateway.bak.YYYYMMDD-HHMMSS</code>.
+Rollback on trouble: stop the service → restore the folder from the backup → start → check status.
+By construction, the deploy script <b>never</b> touches env files, secrets, OpenViking, or the workspaces.</p>
+
+<div class="warn-card"><b>⚠️ Never edit directly:</b> <code>/opt/wayan-*/gateway</code> (code travels only via deploy),
+the backup contents, and don't "quick-fix on the server" anything that belongs in Git.
+Env files are the one thing edited directly on the server (they're secrets; they must not enter Git).</div>
+
+<!-- ================= 17. SAFETY ================= -->
+<h2 id="s17">17. Safety and permissions</h2>
+
+<table>
+  <tr><th>Mechanism</th><th>What it is and why</th></tr>
+  <tr><td><b>Role-based permissions</b></td><td>Each agent has its own <code>.claude/settings.json</code>: read-only diagnostics and research are allowed; dangerous things are gated. Jupiter is a worker without admin rights; Uran can additionally restart the wayan services (and only them) via a narrow sudoers file.</td></tr>
+  <tr><td><b>Gates on dangerous ops</b></td><td>git push, ssh, rm, chmod, stopping services, apt, reboot — all require explicit approval. A model mistake must not be able to level the server.</td></tr>
+  <tr><td><b>No-self-edit denies</b></td><td>Deny rules stop an agent from editing its own CLAUDE.md, rules, skills, memory. Learning happens only through proposals and your approval (<a href="#s12">section 12</a>).</td></tr>
+  <tr><td><b>Secret protection</b></td><td>Tokens and keys live only in <code>/etc/wayan-*.env</code> and <code>ov.conf</code> with 600 permissions; <code>.gitignore</code> blocks their way into Git; agents are forbidden from echoing values into logs or chats.</td></tr>
+  <tr><td><b>OpenViking is localhost-only</b></td><td>Memory listens on <code>127.0.0.1:1933</code> and is unreachable from the internet: it holds your knowledge, and it must not face outward.</td></tr>
+  <tr><td><b>Port 8080 closed (M6, phase 1)</b></td><td>The legacy bot's public webhook port was closed: the bot now binds to localhost and the firewall rule was removed. Fewer open ports — smaller attack surface.</td></tr>
+  <tr><td><b>.env at 600</b></td><td>Env file permissions were hardened: only root and the services can read them. No other user/process sees the tokens.</td></tr>
+  <tr><td><b>Rootless migration (M6, phase 2)</b></td><td>The legacy <code>wayan_pirat_bot</code> still runs as root — the plan to move it to an unprivileged user is <b>written but not yet applied</b> (see <code>docs/M6_WAYAN_BOT_ROOTLESS_PLAN.md</code>). Know this limitation exists.</td></tr>
+</table>
+
+<!-- ================= 18. TROUBLESHOOTING ================= -->
+<h2 id="s18">18. When something breaks</h2>
+<p>19 typical problems. Open your card: symptom → likely cause → fix → check command.</p>
+
+<details><summary>SSH: password rejected / key doesn't work</summary><div class="body">
+<p><b>Symptom:</b> Permission denied (publickey,password). <b>Cause:</b> a typo, wrong IP, or the key wasn't copied to the server.</p>
+<p><b>Fix:</b> verify the IP in the provider dashboard; the password is typed blind — that's normal; for keys: <code>ssh-copy-id root@SERVER_IP</code>.</p>
+<div class="cmd">ssh -v root@SERVER_IP</div>
+</div></details>
+
+<details><summary>git pull fails</summary><div class="body">
+<p><b>Symptom:</b> conflict / divergent branches / local changes would be overwritten. <b>Cause:</b> someone hand-edited the clone on the server.</p>
+<p><b>Fix:</b> look at what changed; commit what's valuable, drop the junk.</p>
+<div class="cmd">cd /root/wayan-claude-install && git status && git stash && git pull</div>
+</div></details>
+
+<details><summary>install.sh: permission denied / must run as root</summary><div class="body">
+<p><b>Symptom:</b> refusal at launch. <b>Cause:</b> no sudo, or the file isn't executable.</p>
+<p><b>Fix:</b> run with sudo; if needed, <code>chmod +x install.sh</code> or <code>sudo bash install.sh</code>.</p>
+<div class="cmd">sudo bash install.sh</div>
+</div></details>
+
+<details><summary>Telegram bot is silent (token)</summary><div class="body">
+<p><b>Symptom:</b> the bot doesn't respond at all. <b>Cause:</b> an empty/wrong token, swapped tokens, or the service wasn't restarted after editing the env.</p>
+<p><b>Fix:</b> compare the token against BotFather, fix the env, restart the service.</p>
+<div class="cmd">sudo systemctl restart wayan-jupiter.service && journalctl -u wayan-jupiter.service -e</div>
+</div></details>
+
+<details><summary>Claude not logged in</summary><div class="body">
+<p><b>Symptom:</b> the agent errors on every message; auth errors in the logs. <b>Cause:</b> the login was never done, or was done as root.</p>
+<p><b>Fix:</b> log in specifically as wayan (step 7) and restart the services.</p>
+<div class="cmd">sudo -u wayan -i
+claude</div>
+</div></details>
+
+<details><summary>Voice isn't transcribed (Groq)</summary><div class="body">
+<p><b>Symptom:</b> "voice is disabled" or an error on voice notes. <b>Cause:</b> no GROQ_API_KEY, an invalid key, or no restart.</p>
+<p><b>Fix:</b> check the key in the env and the balance/limits at console.groq.com, restart the service.</p>
+<div class="cmd">grep -c GROQ_API_KEY /etc/wayan-jupiter.env && sudo systemctl restart wayan-jupiter.service</div>
+</div></details>
+
+<details><summary>OpenViking health doesn't answer</summary><div class="body">
+<p><b>Symptom:</b> curl to /health hangs or errors. <b>Cause:</b> the container isn't running / Docker didn't start.</p>
+<p><b>Fix:</b> bring compose up, read the container logs.</p>
+<div class="cmd">cd /home/wayan/.openviking && docker compose up -d && docker compose logs --tail 50</div>
+</div></details>
+
+<details><summary>memory_store fails</summary><div class="body">
+<p><b>Symptom:</b> the agent says it couldn't store the memory. <b>Cause #1:</b> the OpenAI balance is empty (needs ≥ $5); or OpenViking isn't running; or the key in ov.conf is wrong.</p>
+<p><b>Fix:</b> fund the OpenAI balance; check /health; check ov.conf permissions (600, wayan:wayan).</p>
+<div class="cmd">curl -s http://127.0.0.1:1933/health</div>
+</div></details>
+
+<details><summary>Docker not installed</summary><div class="body">
+<p><b>Symptom:</b> docker: command not found. <b>Cause:</b> Docker isn't part of the base Wayan installer — it's needed only for OpenViking.</p>
+<p><b>Fix:</b> install Docker Engine + the compose plugin via the official docs.docker.com guide for Ubuntu, then return to step 10.</p>
+<div class="cmd">docker --version && docker compose version</div>
+</div></details>
+
+<details><summary>ffmpeg missing</summary><div class="body">
+<p><b>Symptom:</b> the agent says visual analysis is unavailable and reviewed audio only. <b>Cause:</b> ffmpeg isn't installed.</p>
+<p><b>Fix:</b> install it and restart the service.</p>
+<div class="cmd">sudo apt-get install -y ffmpeg && sudo systemctl restart wayan-jupiter.service</div>
+</div></details>
+
+<details><summary>Videos analyzed by audio only</summary><div class="body">
+<p><b>Symptom:</b> no visual part in the reply. <b>Cause:</b> VIDEO_VISUAL_ANALYSIS is off (the default is false).</p>
+<p><b>Fix:</b> enable the flag in the env of the agent(s) and restart.</p>
+<div class="cmd">sudoedit /etc/wayan-jupiter.env   # VIDEO_VISUAL_ANALYSIS=true</div>
+</div></details>
+
+<details><summary>Video too large</summary><div class="body">
+<p><b>Symptom:</b> the agent says the file exceeds the limit. <b>Cause:</b> Telegram doesn't let bots download files over ~20 MB.</p>
+<p><b>Fix:</b> send a direct link to the file (a URL to an .mp4 etc.) — the gateway downloads it itself with size and disk checks.</p>
+</div></details>
+
+<details><summary>Queue stuck</summary><div class="body">
+<p><b>Symptom:</b> "Queue position: 3" and silence beyond the timeout. <b>Cause:</b> a long task or a hung Claude process.</p>
+<p><b>Fix:</b> <code>/queue</code> — inspect; <code>/cancel</code> — clear; if that fails — ask Uran "why is Jupiter not responding" or restart the service.</p>
+<div class="cmd">sudo systemctl restart wayan-jupiter.service</div>
+</div></details>
+
+<details><summary>Agent says: permission denied</summary><div class="body">
+<p><b>Symptom:</b> the agent reports that an action is blocked by permissions. <b>Cause:</b> the role permission profile is doing its job — the action is on the dangerous list.</p>
+<p><b>Fix:</b> most of the time this is exactly as designed. If the action is genuinely needed — consciously extend the agent's <code>.claude/settings.json</code> (see docs/PERMISSIONS.md), don't switch the protection off wholesale.</p>
+</div></details>
+
+<details><summary>Low RAM / server swapping</summary><div class="body">
+<p><b>Symptom:</b> everything is slow; the health report shows swap. <b>Cause:</b> 1 GB RAM is tight for the agents + OpenViking.</p>
+<p><b>Fix:</b> upgrade the VPS to 2 GB — the cheapest fix for this system's performance problems.</p>
+<div class="cmd">free -h && swapon --show</div>
+</div></details>
+
+<details><summary>Drift: production doesn't match Git</summary><div class="body">
+<p><b>Symptom:</b> <code>--check</code> shows FAIL and file names. <b>Cause:</b> someone edited /opt directly, or a deploy didn't finish.</p>
+<p><b>Fix:</b> first figure out which version is correct. If the edit is valuable — move it into the repository as a commit, then deploy. Don't overwrite blindly.</p>
+<div class="cmd">cd /root/wayan-claude-install && bash scripts/deploy-gateway.sh --check</div>
+</div></details>
+
+<details><summary>Service crash-looping</summary><div class="body">
+<p><b>Symptom:</b> status shows activating/auto-restart; the bot flickers alive and dead. <b>Cause:</b> a config error (broken env) or a code error.</p>
+<p><b>Fix:</b> read the last journal lines — the exact cause is there; fix the cause, not the symptom.</p>
+<div class="cmd">journalctl -u wayan-jupiter.service -n 50 --no-pager</div>
+</div></details>
+
+<details><summary>Ports and firewall: something "unreachable"</summary><div class="body">
+<p><b>Symptom:</b> it feels like you need an open port, or that something is exposed. <b>Cause:</b> webhook vs polling confusion.</p>
+<p><b>Fix:</b> remember: Wayan agents need <b>no</b> inbound ports (Telegram works via polling, OpenViking is localhost). Only SSH should face the internet.</p>
+<div class="cmd">sudo ufw status && ss -tlnp | grep -v 127.0.0.1</div>
+</div></details>
+
+<details><summary>Accidentally pasted the prompt together with the command</summary><div class="body">
+<p><b>Symptom:</b> errors like <code>root@server:~#: command not found</code> or <code>$: command not found</code>. <b>Cause:</b> the line was copied together with the shell prompt (<code>$</code>, <code>#</code>, <code>root@…</code>).</p>
+<p><b>Fix:</b> copy only the command itself. In this guide, the "copy" button gives you the clean command with no prompts.</p>
+</div></details>
+
+<!-- ================= 19. FINAL CHECKLIST ================= -->
+<h2 id="s19">19. Final checklist</h2>
+<p>Go top to bottom. All boxes ticked — the system is ready for real work.</p>
+<ul class="check">
+  <li>VPS running (Ubuntu 22.04/24.04, ideally 2 GB RAM)</li>
+  <li>SSH connection works (key, alias in ~/.ssh/config)</li>
+  <li>Repository cloned to /root/wayan-claude-install</li>
+  <li>install.sh finished with the green banner</li>
+  <li>wayan-jupiter.service — active (running)</li>
+  <li>wayan-uran.service — active (running)</li>
+  <li>Both Telegram bots respond (tokens in the env files)</li>
+  <li>Claude logged in as the wayan user</li>
+  <li>Groq works: voice note → transcript</li>
+  <li>OpenViking: /health responds</li>
+  <li>memory_store / memory_recall work (and Uran sees what Jupiter stored)</li>
+  <li>Voice test passed</li>
+  <li>PDF test passed (transcript appeared in transcripts/)</li>
+  <li>Visual video analysis test passed (ffmpeg + flag enabled)</li>
+  <li>Queue: several messages in a row — all processed, /queue works</li>
+  <li>git status in the repository — clean</li>
+  <li>deploy-gateway.sh --check — PASS (production matches the repo)</li>
+  <li>No secrets committed (env, ov.conf, accounts.md outside Git)</li>
+  <li>OpenViking listens only on 127.0.0.1:1933</li>
+  <li>Port 8080 not publicly exposed (ufw status / ss -tlnp)</li>
+</ul>
+
+<!-- ================= 20. PUBLIC TEMPLATE ================= -->
+<h2 id="s20">20. The repo as a template: build your own system</h2>
+
+<p>Wayan Agents is an open template — a reusable framework anyone can take as the foundation of
+their own agent system:</p>
+<ol>
+  <li><b>Fork the repository</b> on GitHub — you get your own copy with history.</li>
+  <li><b>Pick a pack</b> (<code>WAYAN_PACK</code>) as the starting specialization — or write your own pack following <code>docs/PACKS.md</code>.</li>
+  <li><b>Customize the templates</b>: <code>templates/*/CLAUDE.md</code> and USER.md — your agents' names, roles, and tone.</li>
+  <li><b>Customize the skills</b> in <code>skills/</code> — playbooks for your tasks.</li>
+  <li><b>Customize the orchestration</b>: rules, the services map, the memory seed in <code>orchestration/</code>.</li>
+  <li><b>Secrets stay local only</b>: env files, ov.conf, accounts.md are never committed (already enforced by .gitignore).</li>
+  <li><b>Git is for documents and code</b> — not for runtime secrets and not for raw media.</li>
+  <li><b>Obsidian is for knowledge</b>: your Markdown base grows with the agents and remains yours.</li>
+  <li>The result is <b>your own brand and agent system</b>: "Jupiter and Uran" easily become any characters of your world.</li>
+</ol>
+
+<!-- ================= 21. FOOTER ================= -->
+<h2 id="s21" style="border:none;margin-bottom:0">21. Wrap-up</h2>
+<div class="ok-card"><b>You made it to the end.</b> You now have not just a working system,
+but an understanding of <i>why</i> it's built this way: Git as truth, Markdown as memory,
+a human as the reviewer, a minimum of open ports. Happy hunting. NFA.</div>
+<p class="meta" style="text-align:center">🇷🇺 <a href="wayan_agents_full_guide.html">Эта же страница по-русски — русская версия гида</a></p>
+
+<footer>
+  <p><span class="gold">Wayan Agents</span> · Jupiter + Uran · OpenViking Memory · Markdown + Git + Obsidian · WAYAN_PACK</p>
+  <p style="margin-top:6px">NFA · DIOR · LOPATA</p>
+</footer>
+
+</div>
+<script>
+(function(){
+  var blocks = document.querySelectorAll('.cmd');
+  for (var i = 0; i < blocks.length; i++) (function(el){
+    var text = el.textContent.trim();
+    var btn = document.createElement('button');
+    btn.className = 'cp';
+    btn.type = 'button';
+    btn.textContent = 'copy';
+    btn.addEventListener('click', function(){
+      function done(){ btn.textContent = '✓ copied';
+        setTimeout(function(){ btn.textContent = 'copy'; }, 1600); }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, fallback);
+      } else { fallback(); }
+      function fallback(){
+        var ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); done(); } catch(e){}
+        document.body.removeChild(ta);
+      }
+    });
+    el.appendChild(btn);
+  })(blocks[i]);
+})();
+</script>
+</body>
+</html>

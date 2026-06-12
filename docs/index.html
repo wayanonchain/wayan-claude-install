@@ -3,32 +3,50 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Wayan Agents — документация</title>
+<title>Wayan Agents — guides / гиды</title>
 <style>
   :root{--bg:#06080f;--panel:#0d1428;--gold:#d4af37;--gold2:#f0cd6a;--blue:#3b6ecc;--text:#dfe3ee;--muted:#8b93a8}
   *{box-sizing:border-box;margin:0;padding:0}
   body{background:var(--bg);color:var(--text);font:16px/1.65 -apple-system,'Segoe UI',Roboto,sans-serif;
     min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
-  .card{max-width:560px;width:100%;background:var(--panel);border:1px solid #1c2747;border-radius:14px;
+  .card{max-width:680px;width:100%;background:var(--panel);border:1px solid #1c2747;border-radius:14px;
     padding:36px 32px;text-align:center}
   h1{color:var(--gold);font-size:1.7em;letter-spacing:.5px}
-  p{margin:14px 0;color:var(--muted)}
+  .sub{margin:14px 0 6px;color:var(--muted)}
+  .langs{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:24px 0 6px}
+  .lang{background:#0a0f1e;border:1px solid #1c2747;border-radius:12px;padding:22px 18px}
+  .lang h2{color:var(--gold2);font-size:1.1em;margin-bottom:6px}
+  .lang p{color:var(--muted);font-size:.9em;margin-bottom:14px}
   .btn{display:block;background:var(--gold);color:#06080f;font-weight:700;text-decoration:none;
-    border-radius:10px;padding:14px 18px;margin:22px 0 10px;font-size:1.05em}
+    border-radius:10px;padding:12px 16px;margin:0 0 10px;font-size:1em}
   .btn:hover{background:var(--gold2)}
-  a.small{color:var(--blue);text-decoration:none;font-size:.92em}
+  a.small{color:var(--blue);text-decoration:none;font-size:.88em}
   a.small:hover{color:var(--gold2)}
-  .foot{margin-top:26px;font-size:.85em;color:var(--muted)}
+  .repo{margin-top:20px}
+  .foot{margin-top:24px;font-size:.85em;color:var(--muted)}
   .foot span{color:var(--gold)}
 </style>
 </head>
 <body>
   <div class="card">
     <h1>⚡ Wayan Agents</h1>
-    <p>Jupiter + Uran — Telegram AI-агенты с памятью, Git, Obsidian и пакетами профессий.</p>
-    <a class="btn" href="wayan_agents_full_guide.html">Открыть полный гид (RU) →</a>
-    <a class="small" href="wayan_agents_full_guide.html" download>или скачать HTML-файл гида</a>
-    <p style="margin-top:24px"><a class="small" href="https://github.com/wayanonchain/wayan-claude-install">Репозиторий на GitHub</a></p>
+    <p class="sub">Jupiter + Uran — Telegram AI agents with memory, Git, Obsidian and profession packs.<br>
+    Telegram AI-агенты с памятью, Git, Obsidian и пакетами профессий.</p>
+    <div class="langs">
+      <div class="lang">
+        <h2>🇷🇺 Русская версия</h2>
+        <p>Полный гид: установка, словарь, память, пакеты, troubleshooting.</p>
+        <a class="btn" href="wayan_agents_full_guide.html">Открыть русский гид →</a>
+        <a class="small" href="wayan_agents_full_guide.html" download>скачать HTML (RU)</a>
+      </div>
+      <div class="lang">
+        <h2>🇬🇧 English version</h2>
+        <p>The complete guide: install, glossary, memory, packs, troubleshooting.</p>
+        <a class="btn" href="wayan_agents_full_guide_en.html">Open the English guide →</a>
+        <a class="small" href="wayan_agents_full_guide_en.html" download>download HTML (EN)</a>
+      </div>
+    </div>
+    <p class="repo"><a class="small" href="https://github.com/wayanonchain/wayan-claude-install">GitHub repository / репозиторий</a></p>
     <p class="foot"><span>Wayan Agents</span> · OpenViking Memory · Markdown + Git + Obsidian · WAYAN_PACK</p>
   </div>
 </body>

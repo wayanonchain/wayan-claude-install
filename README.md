@@ -6,16 +6,19 @@ an Ubuntu VPS, following the EdgeLab "Day 1" methodology.
 > This is an independent installer. It is **not** tied to any previous
 > `wayan_pirat_bot` setup.
 
-> **New here? → [Open the full Russian HTML guide](https://wayanonchain.github.io/wayan-claude-install/wayan_agents_full_guide.html)**
-> (GitHub Pages, no install needed). Or start with the
-> [Terms Glossary](docs/TERMS_GLOSSARY.md) and
+> **Public guides** (GitHub Pages, no install needed):
+> - **Russian guide:** <https://wayanonchain.github.io/wayan-claude-install/wayan_agents_full_guide.html>
+> - **English guide:** <https://wayanonchain.github.io/wayan-claude-install/wayan_agents_full_guide_en.html>
+> - **Landing page:** <https://wayanonchain.github.io/wayan-claude-install/>
+>
+> Or start with the [Terms Glossary](docs/TERMS_GLOSSARY.md) and
 > [Costs & Services](docs/COSTS_AND_SERVICES.md), then come back to *Getting
 > started* below.
 >
-> Other ways to read the guide:
-> - **Open online:** <https://wayanonchain.github.io/wayan-claude-install/wayan_agents_full_guide.html>
-> - **Download HTML:** [raw file](https://raw.githubusercontent.com/wayanonchain/wayan-claude-install/main/docs/wayan_agents_full_guide.html) → save as `wayan_agents_full_guide.html` (Cmd/Ctrl+S)
-> - **Open locally:** double-click the saved file — it works in any browser, fully offline, no dependencies.
+> To read a guide offline: download the
+> [RU](https://raw.githubusercontent.com/wayanonchain/wayan-claude-install/main/docs/wayan_agents_full_guide.html) /
+> [EN](https://raw.githubusercontent.com/wayanonchain/wayan-claude-install/main/docs/wayan_agents_full_guide_en.html)
+> raw HTML, save it as a file, and double-click — it works in any browser, fully offline, no dependencies.
 
 ---
 
@@ -67,6 +70,7 @@ laptop. You install and operate them over SSH.
 | [OPENVIKING_MEMORY.md](docs/OPENVIKING_MEMORY.md) | Long-term semantic memory |
 | [KNOWLEDGE_EXPORT.md](docs/KNOWLEDGE_EXPORT.md) | Exporting approved Markdown knowledge to Git |
 | [wayan_agents_full_guide.html](docs/wayan_agents_full_guide.html) | **Полный гид для новичка (RU)** — standalone HTML: 21 раздел, словарь, 18 шагов установки, WAYAN_PACK, память, видео-анализ, troubleshooting |
+| [wayan_agents_full_guide_en.html](docs/wayan_agents_full_guide_en.html) | **Full beginner guide (EN)** — same 21 sections as the RU guide, standalone HTML |
 | [PACKS.md](docs/PACKS.md) | Installable profession packs (`WAYAN_PACK=…`): usage, layout, creating packs |
 | [PROFESSION_PACKS.md](docs/PROFESSION_PACKS.md) | 8 profession adaptations (design catalog) + how to build your own pack |
 | [WAYAN_SOCIAL_GROWTH.md](docs/WAYAN_SOCIAL_GROWTH.md) | Agent-powered content machine: workflows + templates |

@@ -20,6 +20,18 @@ This project adheres to [Semantic Versioning](https://semver.org/).
   crash-notify, video ack variants).
 
 ### Added
+- **English beginner HTML guide + bilingual landing.** New
+  `docs/wayan_agents_full_guide_en.html` (~84 KB) — a full localization of the
+  Russian guide, not a short translation: the same 21 sections, 33-term
+  glossary, 18 install steps, 19 troubleshooting cards, three diagrams,
+  copy buttons on all 60 command blocks, same dark Wayan style, standalone
+  (no external deps), same pricing discipline (approximate figures + official
+  links; "check the current official pricing page" where exact prices are
+  unverifiable). RU and EN guides cross-link each other (header + footer);
+  `docs/index.html` is now a bilingual landing with open/download cards for
+  both versions; README gains a "Public guides" block with the RU/EN/landing
+  GitHub Pages URLs. Published at
+  `…/wayan_agents_full_guide_en.html` via the existing Pages setup.
 - **Final Russian beginner HTML guide (workshop edition).**
   `docs/wayan_agents_full_guide.html` rebuilt from 14 to 21 sections (~115 KB,
   standalone, no external deps, dark gold/blue Wayan style, responsive):
