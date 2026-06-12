@@ -3,51 +3,245 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Wayan Agents — guides / гиды</title>
+<title>Wayan Agents — Public Workshop Guide</title>
 <style>
-  :root{--bg:#06080f;--panel:#0d1428;--gold:#d4af37;--gold2:#f0cd6a;--blue:#3b6ecc;--text:#dfe3ee;--muted:#8b93a8}
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);color:var(--text);font:16px/1.65 -apple-system,'Segoe UI',Roboto,sans-serif;
-    min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
-  .card{max-width:680px;width:100%;background:var(--panel);border:1px solid #1c2747;border-radius:14px;
-    padding:36px 32px;text-align:center}
-  h1{color:var(--gold);font-size:1.7em;letter-spacing:.5px}
-  .sub{margin:14px 0 6px;color:var(--muted)}
-  .langs{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:24px 0 6px}
-  .lang{background:#0a0f1e;border:1px solid #1c2747;border-radius:12px;padding:22px 18px}
-  .lang h2{color:var(--gold2);font-size:1.1em;margin-bottom:6px}
-  .lang p{color:var(--muted);font-size:.9em;margin-bottom:14px}
-  .btn{display:block;background:var(--gold);color:#06080f;font-weight:700;text-decoration:none;
-    border-radius:10px;padding:12px 16px;margin:0 0 10px;font-size:1em}
-  .btn:hover{background:var(--gold2)}
-  a.small{color:var(--blue);text-decoration:none;font-size:.88em}
-  a.small:hover{color:var(--gold2)}
-  .repo{margin-top:20px}
-  .foot{margin-top:24px;font-size:.85em;color:var(--muted)}
-  .foot span{color:var(--gold)}
+  :root {
+    --bg: #07090f;
+    --surface: #0e1322;
+    --surface2: #131a2e;
+    --ink: #e9ecf5;
+    --gray: #97a0b8;
+    --hair: #1e2742;
+    --gold: #d4af37;
+    --gold2: #edd385;
+    --blue: #6b93e8;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif;
+    font-weight: 300;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 72px 24px 96px; }
+
+  /* HERO */
+  .hero { text-align: center; margin-bottom: 80px; }
+  .eyebrow {
+    font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--gold); font-weight: 500; margin-bottom: 18px;
+  }
+  h1 {
+    font-size: 46px; line-height: 1.12; font-weight: 600;
+    letter-spacing: -0.015em; margin-bottom: 18px; color: var(--ink);
+  }
+  .hero p.sub {
+    font-size: 19px; color: var(--gray); font-weight: 300;
+    max-width: 580px; margin: 0 auto 30px;
+  }
+  .facts {
+    display: flex; justify-content: center; gap: 36px; flex-wrap: wrap;
+    color: var(--gray); font-size: 14px; font-weight: 400; margin-bottom: 8px;
+  }
+  .facts span b { display: block; color: var(--gold2); font-size: 24px; font-weight: 500; }
+  .btnrow { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 36px; }
+  .btnrow a {
+    padding: 11px 26px; border-radius: 980px; text-decoration: none;
+    font-size: 15px; font-weight: 400;
+  }
+  .btnrow a.primary { background: var(--gold); color: #0b0d12; font-weight: 500; }
+  .btnrow a.primary:hover { background: var(--gold2); }
+  .btnrow a.ghost { color: var(--blue); border: 1px solid var(--hair); background: var(--surface); }
+  .btnrow a.ghost:hover { color: var(--gold2); border-color: var(--gold); }
+
+  /* SECTION STRUCTURE */
+  section { margin-bottom: 76px; }
+  .kicker {
+    font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--gold); font-weight: 500; margin-bottom: 8px; text-align: center;
+  }
+  h2 { font-size: 30px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 8px; text-align: center; color: var(--ink); }
+  .lead { color: var(--gray); font-size: 16px; text-align: center; max-width: 560px; margin: 0 auto 28px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--hair); border-radius: 18px;
+    padding: 24px 26px;
+  }
+  .card .ttl { font-size: 15px; font-weight: 500; margin-bottom: 8px; display: block; color: var(--gold2); }
+  .card p { font-size: 14.5px; color: var(--gray); }
+
+  .steps { counter-reset: n; margin: 26px 0 0; }
+  .step {
+    background: var(--surface); border: 1px solid var(--hair); border-radius: 18px;
+    padding: 20px 24px 20px 68px; margin: 10px 0; position: relative;
+  }
+  .step::before {
+    counter-increment: n; content: counter(n);
+    position: absolute; left: 22px; top: 20px;
+    width: 28px; height: 28px; line-height: 28px; text-align: center;
+    border: 1px solid var(--gold); border-radius: 50%;
+    font-size: 13px; color: var(--gold2); font-weight: 500;
+  }
+  .step b { font-weight: 500; color: var(--ink); }
+  .step span { color: var(--gray); font-size: 14.5px; display: block; font-weight: 300; }
+  .step a { color: var(--blue); text-decoration: none; }
+  .step a:hover { color: var(--gold2); }
+
+  .diagram {
+    background: #04060d; border: 1px solid var(--hair); border-radius: 18px;
+    padding: 28px 22px; margin: 26px 0 0;
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 13px; line-height: 1.7; color: var(--gold2);
+    white-space: pre; overflow-x: auto; text-align: center;
+  }
+
+  .langs { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 26px; }
+  .lang {
+    background: var(--surface); border: 1px solid var(--hair); border-radius: 18px;
+    padding: 30px 28px; text-align: center;
+  }
+  .lang h3 { font-size: 19px; font-weight: 600; margin-bottom: 8px; color: var(--ink); }
+  .lang p { font-size: 14px; color: var(--gray); margin-bottom: 20px; }
+  .lang a.open {
+    display: block; background: var(--gold); color: #0b0d12; font-weight: 500;
+    text-decoration: none; border-radius: 980px; padding: 12px 16px; margin-bottom: 12px; font-size: 15px;
+  }
+  .lang a.open:hover { background: var(--gold2); }
+  .lang a.dl { color: var(--blue); text-decoration: none; font-size: 13.5px; }
+  .lang a.dl:hover { color: var(--gold2); }
+
+  .links { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-top: 26px; }
+  .links a {
+    background: var(--surface); border: 1px solid var(--hair); border-radius: 14px;
+    padding: 16px 18px; text-decoration: none; color: var(--ink); font-size: 14.5px; font-weight: 400;
+  }
+  .links a span { display: block; color: var(--gray); font-size: 12.5px; margin-top: 3px; font-weight: 300; }
+  .links a:hover { border-color: var(--gold); }
+
+  footer {
+    text-align: center; color: var(--gray); font-size: 13px;
+    margin-top: 84px; padding-top: 30px; border-top: 1px solid var(--hair);
+    font-weight: 300;
+  }
+  footer .gold { color: var(--gold); }
+
+  @media (max-width: 600px) {
+    h1 { font-size: 33px; }
+    h2 { font-size: 24px; }
+    .wrap { padding-top: 48px; }
+    .facts { gap: 22px; }
+  }
 </style>
 </head>
 <body>
-  <div class="card">
-    <h1>⚡ Wayan Agents</h1>
-    <p class="sub">Jupiter + Uran — Telegram AI agents with memory, Git, Obsidian and profession packs.<br>
-    Telegram AI-агенты с памятью, Git, Obsidian и пакетами профессий.</p>
-    <div class="langs">
-      <div class="lang">
-        <h2>🇷🇺 Русская версия</h2>
-        <p>Полный гид: установка, словарь, память, пакеты, troubleshooting.</p>
-        <a class="btn" href="wayan_agents_full_guide.html">Открыть русский гид →</a>
-        <a class="small" href="wayan_agents_full_guide.html" download>скачать HTML (RU)</a>
-      </div>
-      <div class="lang">
-        <h2>🇬🇧 English version</h2>
-        <p>The complete guide: install, glossary, memory, packs, troubleshooting.</p>
-        <a class="btn" href="wayan_agents_full_guide_en.html">Open the English guide →</a>
-        <a class="small" href="wayan_agents_full_guide_en.html" download>download HTML (EN)</a>
-      </div>
-    </div>
-    <p class="repo"><a class="small" href="https://github.com/wayanonchain/wayan-claude-install">GitHub repository / репозиторий</a></p>
-    <p class="foot"><span>Wayan Agents</span> · OpenViking Memory · Markdown + Git + Obsidian · WAYAN_PACK</p>
+<div class="wrap">
+
+<div class="hero">
+  <div class="eyebrow">Wayan Agents · Public Workshop Guide</div>
+  <h1>Wayan Agents</h1>
+  <p class="sub">Telegram AI agents with memory, Git, Obsidian, visual video analysis, and profession packs.</p>
+  <div class="facts">
+    <span><b>2</b>agents</span>
+    <span><b>RU + EN</b>guides</span>
+    <span><b>5</b>profession packs</span>
+    <span><b>👁</b>visual video analysis</span>
   </div>
+  <div class="btnrow">
+    <a class="primary" href="wayan_agents_full_guide.html">Open Russian Guide</a>
+    <a class="primary" href="wayan_agents_full_guide_en.html">Open English Guide</a>
+  </div>
+  <div class="btnrow" style="margin-top:12px">
+    <a class="ghost" href="wayan_agents_full_guide.html" download>Download RU HTML</a>
+    <a class="ghost" href="wayan_agents_full_guide_en.html" download>Download EN HTML</a>
+    <a class="ghost" href="https://github.com/wayanonchain/wayan-claude-install">GitHub Repository</a>
+  </div>
+</div>
+
+<section>
+  <div class="kicker">Section 1</div>
+  <h2>What you will build</h2>
+  <p class="lead">Two personal AI agents on your own server, reachable from Telegram — with long-term memory and a versioned knowledge base.</p>
+  <div class="grid">
+    <div class="card"><span class="ttl">Jupiter</span><p>The primary research / content / analysis agent: tokens, PDFs, voice notes, videos, posts.</p></div>
+    <div class="card"><span class="ttl">Uran</span><p>The operations / server / support agent: logs, diagnostics, restarting Jupiter when it falls over.</p></div>
+    <div class="card"><span class="ttl">OpenViking memory</span><p>Semantic long-term memory: the agents recall knowledge by meaning, localhost-only.</p></div>
+    <div class="card"><span class="ttl">Visual video analysis</span><p>Groq audio transcript + ffmpeg keyframes + Claude visual analysis — one merged review.</p></div>
+    <div class="card"><span class="ttl">WAYAN_PACK presets</span><p>Profession presets at install time: onchain, creator, devops, student, founder.</p></div>
+    <div class="card"><span class="ttl">Repo-first deployment</span><p>GitHub as the source of truth: pull → tests → drift check → backup → deploy.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="kicker">Section 2</div>
+  <h2>Choose your path</h2>
+  <div class="steps">
+    <div class="step"><b>Beginner — read the guide first.</b>
+      <span>Open the <a href="wayan_agents_full_guide.html">Russian</a> or <a href="wayan_agents_full_guide_en.html">English</a> guide: it teaches every concept before asking you to run anything.</span></div>
+    <div class="step"><b>Builder — install on a VPS.</b>
+      <span>Follow the 18-step install flow in the guide: VPS → SSH → installer → bots → Claude login → memory → tests.</span></div>
+    <div class="step"><b>Developer — fork and customize.</b>
+      <span>Fork the <a href="https://github.com/wayanonchain/wayan-claude-install">repository</a>, rewrite templates, skills, and packs — secrets always stay local.</span></div>
+    <div class="step"><b>Creator / analyst / operator — choose a profession pack.</b>
+      <span><code style="color:var(--gold2)">WAYAN_PACK=creator sudo -E ./install.sh</code> — the same system, tuned for your work from day one.</span></div>
+  </div>
+</section>
+
+<section>
+  <div class="kicker">Section 3</div>
+  <h2>Architecture snapshot</h2>
+  <div class="diagram">User
+  ↓
+Telegram
+  ↓
+Jupiter / Uran
+  ↓
+Claude Code
+  ↓
+Skills / Rules / Memory / OpenViking
+  ↓
+Markdown / Git / Obsidian</div>
+</section>
+
+<section>
+  <div class="kicker">Section 4</div>
+  <h2>Guides</h2>
+  <div class="langs">
+    <div class="lang">
+      <h3>🇷🇺 Русская версия</h3>
+      <p>Полный гид: 21 раздел — установка, словарь, память, пакеты, безопасность, troubleshooting.</p>
+      <a class="open" href="wayan_agents_full_guide.html">Открыть русский гид →</a>
+      <a class="dl" href="wayan_agents_full_guide.html" download>скачать HTML (RU)</a>
+    </div>
+    <div class="lang">
+      <h3>🇬🇧 English version</h3>
+      <p>The complete guide: 21 sections — install, glossary, memory, packs, safety, troubleshooting.</p>
+      <a class="open" href="wayan_agents_full_guide_en.html">Open the English guide →</a>
+      <a class="dl" href="wayan_agents_full_guide_en.html" download>download HTML (EN)</a>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="kicker">Section 5</div>
+  <h2>Quick links</h2>
+  <div class="links">
+    <a href="https://github.com/wayanonchain/wayan-claude-install">GitHub repository<span>code, installer, templates, tests</span></a>
+    <a href="https://github.com/wayanonchain/wayan-claude-install/blob/main/docs/PACKS.md">PACKS docs<span>how WAYAN_PACK works, build your own</span></a>
+    <a href="https://github.com/wayanonchain/wayan-claude-install/blob/main/docs/PROFESSION_PACKS.md">Profession packs<span>the 8-profession design catalog</span></a>
+    <a href="https://github.com/wayanonchain/wayan-claude-install/blob/main/docs/DEPLOYMENT.md">Deployment docs<span>repo-first deploys, drift checks, rollback</span></a>
+    <a href="https://github.com/wayanonchain/wayan-claude-install/blob/main/docs/WAYAN_SOCIAL_GROWTH.md">Social growth workflows<span>the agent-powered content machine</span></a>
+  </div>
+</section>
+
+<footer>
+  <p><span class="gold">Wayan Agents</span> · Jupiter + Uran · OpenViking Memory · Markdown + Git + Obsidian · WAYAN_PACK</p>
+  <p style="margin-top:6px">NFA · DIOR · LOPATA</p>
+</footer>
+
+</div>
 </body>
 </html>

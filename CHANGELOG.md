@@ -19,6 +19,19 @@ This project adheres to [Semantic Versioning](https://semver.org/).
   tests (rapid multi-message ordering, /queue, /cancel, timeout-continue,
   crash-notify, video ack variants).
 
+### Changed
+- **Public pages redesigned in a premium workshop style.** `docs/index.html`
+  rebuilt as a workshop entry page (centered hero with eyebrow/facts row, pill
+  buttons, "what you will build" cards, choose-your-path numbered steps,
+  architecture diagram, two language cards, quick-links grid); both HTML
+  guides (RU + EN) restyled to the same visual language — dark navy/gold
+  palette, light-weight typography, 18px-radius soft cards, contained tables
+  with uppercase headers, refined command blocks and callouts, hero with
+  facts row + RU↔EN switcher + back-to-landing pills. All content preserved
+  byte-for-byte outside the `<style>` block and hero (21 sections, 52 details
+  blocks, 60 copy-button commands per guide); still standalone, no external
+  resources, mobile-responsive.
+
 ### Added
 - **English beginner HTML guide + bilingual landing.** New
   `docs/wayan_agents_full_guide_en.html` (~84 KB) — a full localization of the

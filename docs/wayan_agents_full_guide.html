@@ -6,73 +6,135 @@
 <title>Wayan Agents: Jupiter + Uran — полный гид по установке и пониманию системы</title>
 <style>
   :root{
-    --bg:#06080f; --bg2:#0a0f1e; --panel:#0d1428; --panel2:#111a33;
-    --gold:#d4af37; --gold2:#f0cd6a; --blue:#3b6ecc; --text:#dfe3ee;
-    --muted:#8b93a8; --ok:#4ade80; --warn:#fbbf24; --err:#f87171;
-    --mono:'SF Mono',Menlo,Consolas,monospace;
+    --bg:#07090f; --surface:#0e1322; --surface2:#131a2e;
+    --ink:#e9ecf5; --gray:#97a0b8; --hair:#1e2742;
+    --gold:#d4af37; --gold2:#edd385; --blue:#6b93e8;
+    --ok:#4ade80; --warn:#fbbf24; --err:#f87171;
+    --mono:'SF Mono',ui-monospace,Menlo,Consolas,monospace;
+    /* legacy aliases used by inline styles */
+    --text:#e9ecf5; --muted:#97a0b8; --panel:#0e1322; --panel2:#131a2e;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth}
-  body{background:var(--bg);color:var(--text);font:16px/1.65 -apple-system,'Segoe UI',Roboto,sans-serif}
-  .wrap{max-width:920px;margin:0 auto;padding:24px 20px 80px}
-  header{padding:48px 0 32px;text-align:center;border-bottom:1px solid #1c2747}
-  header h1{font-size:2.2em;color:var(--gold);letter-spacing:.5px}
-  header .sub{color:var(--text);margin-top:12px;font-size:1.05em;max-width:640px;margin-left:auto;margin-right:auto}
-  .badge{display:inline-block;background:var(--panel2);border:1px solid var(--gold);color:var(--gold2);
-    border-radius:20px;padding:3px 14px;font-size:.8em;margin:14px 4px 0}
-  h2{color:var(--gold);font-size:1.45em;margin:56px 0 16px;padding-top:20px;border-top:1px solid #1c2747}
-  h3{color:var(--gold2);font-size:1.12em;margin:28px 0 10px}
-  h4{color:var(--gold2);font-size:1em;margin:18px 0 8px}
-  p{margin:10px 0}
+  body{background:var(--bg);color:var(--ink);font-weight:300;line-height:1.7;
+    font-family:-apple-system,"SF Pro Text","Helvetica Neue","Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto;padding:64px 24px 96px}
+
+  /* HERO */
+  header{padding:0 0 44px;text-align:center;border-bottom:1px solid var(--hair)}
+  .eyebrow{font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--gold);font-weight:500;margin-bottom:18px}
+  header h1{font-size:40px;line-height:1.15;font-weight:600;letter-spacing:-.015em;color:var(--ink)}
+  header .sub{color:var(--gray);margin:16px auto 0;font-size:18px;font-weight:300;max-width:600px}
+  .facts{display:flex;justify-content:center;gap:32px;flex-wrap:wrap;
+    color:var(--gray);font-size:13.5px;font-weight:400;margin-top:28px}
+  .facts span b{display:block;color:var(--gold2);font-size:22px;font-weight:500}
+  .langnav{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:32px}
+  .langnav a{padding:10px 24px;border-radius:980px;text-decoration:none;font-size:14.5px;font-weight:400}
+  .langnav a.primary{background:var(--gold);color:#0b0d12;font-weight:500}
+  .langnav a.primary:hover{background:var(--gold2)}
+  .langnav a.ghost{color:var(--blue);border:1px solid var(--hair);background:var(--surface)}
+  .langnav a.ghost:hover{color:var(--gold2);border-color:var(--gold)}
+  .badge{display:inline-block;border:1px solid var(--hair);color:var(--gray);background:var(--surface);
+    border-radius:980px;padding:4px 14px;font-size:12.5px;margin:14px 3px 0}
+  .langlink{margin-top:16px;font-size:.92em}
+  .langlink a{color:var(--blue);text-decoration:none}
+  .langlink a:hover{color:var(--gold2)}
+
+  /* SECTION RHYTHM */
+  h2{color:var(--ink);font-size:28px;font-weight:600;letter-spacing:-.01em;
+    margin:72px 0 16px;padding-top:28px;border-top:1px solid var(--hair)}
+  h3{color:var(--gold2);font-size:17px;font-weight:500;margin:30px 0 10px}
+  h4{color:var(--gold2);font-size:15px;font-weight:500;margin:18px 0 8px}
+  p{margin:11px 0;font-size:15.5px}
   a{color:var(--blue)} a:hover{color:var(--gold2)}
-  ul,ol{margin:10px 0 10px 24px}
-  li{margin:5px 0}
-  .panel{background:var(--panel);border:1px solid #1c2747;border-radius:12px;padding:18px 20px;margin:16px 0}
+  b{font-weight:500;color:var(--ink)}
+  ul,ol{margin:11px 0 11px 24px}
+  li{margin:6px 0;font-size:15px}
+  li::marker{color:var(--gray)}
+  .meta{color:var(--gray);font-size:13.5px}
+
+  /* CARDS & CALLOUTS */
+  .panel{background:var(--surface);border:1px solid var(--hair);border-radius:18px;padding:22px 26px;margin:18px 0}
   .gold-edge{border-left:3px solid var(--gold)}
-  .warn-card{background:#1d1607;border:1px solid var(--warn);border-left:4px solid var(--warn);border-radius:10px;padding:14px 18px;margin:16px 0}
+  .warn-card{background:#181206;border:1px solid #3a2f10;border-left:3px solid var(--warn);
+    border-radius:18px;padding:18px 24px;margin:18px 0;font-size:15px}
   .warn-card b{color:var(--warn)}
-  .info-card{background:#0a1428;border:1px solid var(--blue);border-left:4px solid var(--blue);border-radius:10px;padding:14px 18px;margin:16px 0}
-  .info-card b{color:#7ea7ee}
-  .ok-card{background:#07190f;border:1px solid var(--ok);border-left:4px solid var(--ok);border-radius:10px;padding:14px 18px;margin:16px 0}
+  .info-card{background:#0a1124;border:1px solid #1c2a52;border-left:3px solid var(--blue);
+    border-radius:18px;padding:18px 24px;margin:18px 0;font-size:15px}
+  .info-card b{color:#8fb0f2}
+  .ok-card{background:#07170f;border:1px solid #11321f;border-left:3px solid var(--ok);
+    border-radius:18px;padding:18px 24px;margin:18px 0;font-size:15px}
   .ok-card b{color:var(--ok)}
-  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:.93em}
-  th{color:var(--gold2);text-align:left;border-bottom:2px solid var(--gold);padding:8px 10px}
-  td{border-bottom:1px solid #1c2747;padding:8px 10px;vertical-align:top}
-  code{font-family:var(--mono);background:#161f3a;color:var(--gold2);padding:2px 6px;border-radius:5px;font-size:.88em;word-break:break-word}
-  .cmd{position:relative;background:#040610;border:1px solid #1c2747;border-radius:10px;
-    padding:14px 110px 14px 16px;margin:12px 0;font-family:var(--mono);font-size:.86em;
-    color:#c9d4f5;white-space:pre-wrap;word-break:break-all}
-  .cmd .cp{position:absolute;top:9px;right:9px;background:var(--panel2);border:1px solid var(--gold);
-    color:var(--gold2);border-radius:7px;padding:4px 12px;font-size:.85em;cursor:pointer;font-family:inherit}
-  .cmd .cp:hover{background:var(--gold);color:#06080f}
-  details{background:var(--panel);border:1px solid #1c2747;border-radius:10px;margin:10px 0;padding:0}
-  summary{cursor:pointer;padding:13px 16px;color:var(--gold2);font-weight:600;list-style:none}
+
+  /* TABLES */
+  table{width:100%;border-collapse:separate;border-spacing:0;background:var(--surface);
+    border:1px solid var(--hair);border-radius:16px;overflow:hidden;margin:18px 0;font-size:14px}
+  th{text-align:left;padding:12px 16px;font-size:12px;font-weight:500;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--gray);border-bottom:1px solid var(--hair)}
+  td{padding:12px 16px;border-bottom:1px solid #161e36;font-weight:300;vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  td b{font-weight:500}
+
+  code{font-family:var(--mono);background:var(--surface2);color:var(--gold2);
+    padding:2px 7px;border-radius:6px;font-size:.86em;word-break:break-word}
+
+  /* COMMAND BLOCKS */
+  .cmd{position:relative;background:#04060d;border:1px solid var(--hair);border-radius:14px;
+    padding:16px 116px 16px 20px;margin:14px 0;font-family:var(--mono);font-size:13px;
+    line-height:1.6;color:#cdd6f0;white-space:pre-wrap;word-break:break-all}
+  .cmd .cp{position:absolute;top:10px;right:10px;background:var(--surface2);border:1px solid var(--gold);
+    color:var(--gold2);border-radius:980px;padding:5px 14px;font-size:12px;cursor:pointer;font-family:inherit}
+  .cmd .cp:hover{background:var(--gold);color:#0b0d12}
+
+  /* DETAILS */
+  details{background:var(--surface);border:1px solid var(--hair);border-radius:14px;margin:10px 0;padding:0}
+  details:hover{border-color:#2a3558}
+  summary{cursor:pointer;padding:14px 18px;color:var(--ink);font-weight:500;font-size:15px;list-style:none}
   summary::-webkit-details-marker{display:none}
-  summary::before{content:"▸ ";color:var(--gold)}
-  details[open] summary::before{content:"▾ "}
-  details .body{padding:0 18px 16px;color:var(--text)}
+  summary::before{content:"▸  ";color:var(--gold)}
+  details[open] summary::before{content:"▾  "}
+  details[open] summary{border-bottom:1px solid var(--hair);margin-bottom:6px}
+  details .body{padding:6px 20px 16px;color:var(--ink);font-size:14.5px}
   details .body p{margin:8px 0}
-  .diagram{background:#040610;border:1px solid var(--gold);border-radius:12px;padding:20px;
-    font-family:var(--mono);font-size:.82em;line-height:1.55;color:var(--gold2);
-    white-space:pre;overflow-x:auto;text-align:center;margin:18px 0}
-  .toc{background:var(--panel);border:1px solid var(--gold);border-radius:12px;padding:20px 24px;margin:28px 0;
-    columns:2;column-gap:32px}
-  .toc a{display:block;padding:4px 0;color:var(--text);text-decoration:none;break-inside:avoid}
+
+  /* DIAGRAMS */
+  .diagram{background:#04060d;border:1px solid var(--hair);border-radius:18px;padding:26px 20px;
+    font-family:var(--mono);font-size:13px;line-height:1.7;color:var(--gold2);
+    white-space:pre;overflow-x:auto;text-align:center;margin:20px 0}
+
+  /* TOC */
+  .toc{background:var(--surface);border:1px solid var(--hair);border-radius:18px;
+    padding:24px 28px;margin:36px 0;columns:2;column-gap:36px}
+  .toc a{display:block;padding:5px 0;color:var(--ink);text-decoration:none;font-size:14.5px;break-inside:avoid}
   .toc a:hover{color:var(--gold2)}
-  .check li{list-style:none;margin:7px 0}
-  .check li::before{content:"☐ ";color:var(--gold);font-size:1.1em}
-  .tag{font-size:.78em;border-radius:5px;padding:1px 8px;margin-right:6px;font-weight:700;white-space:nowrap}
+  .toc b{color:var(--gold);font-weight:500}
+
+  /* CHECKLISTS, TAGS, STEPS */
+  .check{margin-left:0}
+  .check li{list-style:none;margin:8px 0}
+  .check li::before{content:"☐  ";color:var(--gold)}
+  .tag{font-size:12px;border-radius:6px;padding:2px 9px;margin-right:6px;font-weight:500;white-space:nowrap}
   .ok{background:#0d2818;color:var(--ok)} .wr{background:#2a2208;color:var(--warn)} .er{background:#2a0d0d;color:var(--err)}
-  .step{background:var(--panel);border:1px solid #1c2747;border-left:3px solid var(--gold);border-radius:10px;padding:16px 20px;margin:18px 0}
-  .step h3{margin-top:0}
-  .meta{color:var(--muted);font-size:.9em}
-  .packgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:16px 0}
-  footer{margin-top:70px;padding-top:24px;border-top:1px solid #1c2747;text-align:center;color:var(--muted);font-size:.9em}
+  .step{background:var(--surface);border:1px solid var(--hair);border-left:3px solid var(--gold);
+    border-radius:18px;padding:18px 24px;margin:16px 0}
+  .step h3{margin-top:0;color:var(--gold2)}
+  .packgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:18px 0}
+  .packgrid .panel{margin:0}
+
+  footer{margin-top:84px;padding-top:30px;border-top:1px solid var(--hair);
+    text-align:center;color:var(--gray);font-size:13px;font-weight:300}
   footer .gold{color:var(--gold)}
+
   @media(max-width:640px){
-    .wrap{padding:16px 12px 60px} header h1{font-size:1.5em}
-    .cmd{padding-right:16px;padding-bottom:46px} .cmd .cp{top:auto;bottom:8px;right:8px}
-    table{font-size:.8em} .toc{columns:1} .diagram{font-size:.72em;text-align:left}
+    .wrap{padding:44px 14px 64px}
+    header h1{font-size:29px}
+    h2{font-size:22px}
+    .facts{gap:20px}
+    .cmd{padding-right:20px;padding-bottom:48px} .cmd .cp{top:auto;bottom:10px;right:10px}
+    table{font-size:12.5px} th,td{padding:9px 10px}
+    .toc{columns:1} .diagram{font-size:11.5px;text-align:left}
   }
 </style>
 </head>
@@ -81,16 +143,20 @@
 
 <!-- ================= 1. HERO ================= -->
 <header id="s1">
-  <h1>⚡ Wayan Agents: Jupiter + Uran</h1>
+  <div class="eyebrow">Wayan Agents · Public Workshop Guide</div>
+  <h1>Wayan Agents:<br>Jupiter + Uran</h1>
   <p class="sub">Как установить и понять систему Telegram AI-агентов с памятью, Git, Obsidian и профессиональными пакетами.</p>
-  <div>
-    <span class="badge">Jupiter · исследования и контент</span>
-    <span class="badge">Uran · сервер и поддержка</span>
-    <span class="badge">OpenViking · семантическая память</span>
-    <span class="badge">WAYAN_PACK · пресеты профессий</span>
+  <div class="facts">
+    <span><b>2</b>агента</span>
+    <span><b>21</b>раздел</span>
+    <span><b>18</b>шагов установки</span>
+    <span><b>5</b>пакетов профессий</span>
   </div>
-  <p style="margin-top:16px;font-size:.92em">🇬🇧 <a href="wayan_agents_full_guide_en.html" style="color:var(--blue);text-decoration:none">Read this guide in English — English version</a></p>
-  <p style="margin-top:6px;font-size:.85em;color:var(--muted)">Онлайн-версия этого гида: <a href="https://wayanonchain.github.io/wayan-claude-install/" style="color:var(--blue);text-decoration:none">wayanonchain.github.io/wayan-claude-install</a> (GitHub Pages)</p>
+  <nav class="langnav">
+    <a class="primary" href="#s2">Начать читать ↓</a>
+    <a class="ghost" href="wayan_agents_full_guide_en.html">🇬🇧 English version</a>
+    <a class="ghost" href="https://wayanonchain.github.io/wayan-claude-install/">← На главную (landing)</a>
+  </nav>
 </header>
 
 <div class="panel gold-edge" style="margin-top:28px">
