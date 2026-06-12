@@ -64,9 +64,13 @@
   .langlink a { color: var(--accent); text-decoration: none; }
 
   /* SECTION RHYTHM */
+  .kicker {
+    font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--accent); font-weight: 500; margin: 96px 0 8px;
+  }
   h2 {
     font-size: 30px; font-weight: 600; letter-spacing: -0.01em; color: var(--ink);
-    margin: 80px 0 14px; padding-top: 36px; border-top: 1px solid var(--hair);
+    margin: 0 0 14px;
   }
   h3 { font-size: 17px; font-weight: 500; margin: 28px 0 12px; color: var(--ink); }
   h4 { font-size: 15px; font-weight: 500; margin: 18px 0 8px; color: var(--ink); }
@@ -259,7 +263,8 @@ If you ever leak a key — revoke it in the provider's dashboard immediately and
 </nav>
 
 <!-- ================= 2. WHAT IT IS ================= -->
-<h2 id="s2">2. What Wayan Agents are</h2>
+<div class="kicker" id="s2">Section 2</div>
+<h2>What Wayan Agents are</h2>
 
 <p>Wayan Agents is a <b>kit for building personal AI agents</b>. You rent a small server,
 run the installer from an open GitHub repository — and get two agents in Telegram.
@@ -288,7 +293,8 @@ Uran is an independent second channel with its own bot and its own service, hold
 <code>sudo</code> for exactly one job: "read the logs and restart Jupiter". Jupiter goes down → you message Uran → Uran fixes it.</div>
 
 <!-- ================= 3. ARCHITECTURE ================= -->
-<h2 id="s3">3. Architecture: three diagrams</h2>
+<div class="kicker" id="s3">Section 3</div>
+<h2>Architecture: three diagrams</h2>
 
 <h3>3.1 The main flow: from message to knowledge</h3>
 <div class="diagram">User
@@ -338,7 +344,8 @@ systemd restart   (service restart with verification)</div>
 <p>Code is <b>never</b> edited directly on the server. Change → commit to GitHub → update script
 with tests → deploy with an automatic backup. Details in <a href="#s16">section 16</a>.</p>
 <!-- ================= 4. WHERE EVERYTHING LIVES ================= -->
-<h2 id="s4">4. Where everything lives</h2>
+<div class="kicker" id="s4">Section 4</div>
+<h2>Where everything lives</h2>
 
 <p>After installation, a handful of paths matter on the VPS. Understanding them is important:
 half of all beginner problems are "edited the wrong file in the wrong place".</p>
@@ -368,7 +375,8 @@ This project had a real drift incident once — which is why <code>deploy-gatewa
 </div>
 
 <!-- ================= 5. SERVICES & COSTS ================= -->
-<h2 id="s5">5. Services &amp; costs before installing</h2>
+<div class="kicker" id="s5">Section 5</div>
+<h2>Services &amp; costs before installing</h2>
 
 <p>You need a few accounts before installing. The prices below are <b>approximate, as of the time
 of writing (June 2026)</b>, and they change: always check the official pricing page.</p>
@@ -442,7 +450,8 @@ All figures are approximate and subject to change — official pages above.</div
 </ul>
 
 <!-- ================= 6. TERMINOLOGY ================= -->
-<h2 id="s6">6. Beginner glossary</h2>
+<div class="kicker" id="s6">Section 6</div>
+<h2>Beginner glossary</h2>
 <p>33 terms you'll meet in this guide. Each block expands: what it is, why it matters, an analogy,
 the common mistake, and an example from Wayan Agents.</p>
 
@@ -710,7 +719,8 @@ the common mistake, and an example from Wayan Agents.</p>
 <p><b>In Wayan:</b> <code>bash scripts/deploy-gateway.sh --check</code> — a PASS/FAIL drift report (file names only).</p>
 </div></details>
 <!-- ================= 7. INSTALLATION PATHS ================= -->
-<h2 id="s7">7. Three installation paths</h2>
+<div class="kicker" id="s7">Section 7</div>
+<h2>Three installation paths</h2>
 
 <h3>Path A. From a Mac (or any computer) to your own VPS — recommended for beginners</h3>
 <p>Your computer is the remote control; everything installs onto the server. First check your
@@ -750,7 +760,8 @@ longer work — path A is worth learning eventually anyway.</p>
 </ol>
 
 <!-- ================= 8. STEP BY STEP ================= -->
-<h2 id="s8">8. Step-by-step installation</h2>
+<div class="kicker" id="s8">Section 8</div>
+<h2>Step-by-step installation</h2>
 <p>18 steps from zero to a fully verified system. For each: the command, what it means, the
 expected output, and the common error. Don't rush: verify each step before moving to the next.</p>
 
@@ -888,7 +899,8 @@ bash scripts/deploy-gateway.sh --check</div>
 <a href="#s9">profession pack</a>, understand <a href="#s10">memory</a>, and <a href="#s12">teach the agents</a> to work your way.
 Quick whole-system self-check: <code>sudo bash scripts/healthcheck.sh</code>.</div>
 <!-- ================= 9. WAYAN_PACK ================= -->
-<h2 id="s9">9. WAYAN_PACK: profession packs</h2>
+<div class="kicker" id="s9">Section 9</div>
+<h2>WAYAN_PACK: profession packs</h2>
 
 <p>A <b>pack</b> is a profession preset chosen at install time. Technically it's a set of Markdown
 files layered on top of the normal install: a role emphasis (<code>PACK.md</code>), a memory seed,
@@ -953,7 +965,8 @@ name is safe — the installer refuses <i>before</i> changing anything and print
 and <code>docs/PROFESSION_PACKS.md</code> (the catalog of 8 professions — design ideas, including future ones).</p>
 
 <!-- ================= 10. MEMORY ================= -->
-<h2 id="s10">10. How memory works</h2>
+<div class="kicker" id="s10">Section 10</div>
+<h2>How memory works</h2>
 
 <p>Memory has three layers. Each solves its own problem, and it matters who's in charge.</p>
 
@@ -995,7 +1008,8 @@ Layer 3 · OPENVIKING   semantic "by meaning" search</div>
 Secrets live in env files and <code>ov.conf</code>; raw material lives temporarily in <code>uploads/tmp</code> and deletes itself.</div>
 
 <!-- ================= 11. OBSIDIAN ================= -->
-<h2 id="s11">11. Where Obsidian fits</h2>
+<div class="kicker" id="s11">Section 11</div>
+<h2>Where Obsidian fits</h2>
 
 <p>The simple idea: <b>agents write Markdown — Obsidian shows it beautifully to a human</b>.
 No magic: Obsidian just opens the same folder of files that the agents write and Git stores.</p>
@@ -1021,7 +1035,8 @@ OpenViking indexes → agents recall</div>
 folder (a local clone of the repo, or a synced transcripts folder). Done: the agents' knowledge base is in front of you.</p>
 
 <!-- ================= 12. TEACHING ================= -->
-<h2 id="s12">12. How to teach the agents</h2>
+<div class="kicker" id="s12">Section 12</div>
+<h2>How to teach the agents</h2>
 
 <p>The agents learn through a <b>safe, human-in-the-loop cycle</b>:</p>
 <ol>
@@ -1041,7 +1056,8 @@ code review. <b>Secrets are never stored</b>, no matter what you type in the cha
 change carefully</b>: in small, reversible, versioned steps.</div>
 
 <!-- ================= 13. JUPITER ================= -->
-<h2 id="s13">13. What Jupiter can do</h2>
+<div class="kicker" id="s13">Section 13</div>
+<h2>What Jupiter can do</h2>
 
 <table>
   <tr><th>Area</th><th>Examples</th></tr>
@@ -1063,7 +1079,8 @@ change carefully</b>: in small, reversible, versioned steps.</div>
 <div class="cmd">Search memory for similar cases about Canton</div>
 
 <!-- ================= 14. URAN ================= -->
-<h2 id="s14">14. What Uran can do</h2>
+<div class="kicker" id="s14">Section 14</div>
+<h2>What Uran can do</h2>
 
 <table>
   <tr><th>Area</th><th>Examples</th></tr>
@@ -1085,7 +1102,8 @@ change carefully</b>: in small, reversible, versioned steps.</div>
 <div class="cmd">Check the drift between Git and production</div>
 
 <!-- ================= 15. QUEUE & MEDIA ================= -->
-<h2 id="s15">15. Task queue and media behavior</h2>
+<div class="kicker" id="s15">Section 15</div>
+<h2>Task queue and media behavior</h2>
 
 <h3>The queue</h3>
 <ul>
@@ -1111,7 +1129,8 @@ change carefully</b>: in small, reversible, versioned steps.</div>
 For a big video/file — send a <b>direct link</b> (a URL to an .mp4/.pdf etc.): the gateway downloads it safely itself.
 <b>Raw files are temporary:</b> they live in <code>uploads/tmp</code>, become a Markdown transcript, and are deleted — the disk stays clean.</div>
 <!-- ================= 16. REPO-FIRST DEPLOY ================= -->
-<h2 id="s16">16. Updates: repo-first deployment</h2>
+<div class="kicker" id="s16">Section 16</div>
+<h2>Updates: repo-first deployment</h2>
 
 <p><b>Why drift is dangerous.</b> If code is edited directly in production, Git stops being the truth:
 the next deploy silently overwrites the edit, there's nothing to roll back to, and debugging becomes
@@ -1142,7 +1161,8 @@ the backup contents, and don't "quick-fix on the server" anything that belongs i
 Env files are the one thing edited directly on the server (they're secrets; they must not enter Git).</div>
 
 <!-- ================= 17. SAFETY ================= -->
-<h2 id="s17">17. Safety and permissions</h2>
+<div class="kicker" id="s17">Section 17</div>
+<h2>Safety and permissions</h2>
 
 <table>
   <tr><th>Mechanism</th><th>What it is and why</th></tr>
@@ -1157,7 +1177,8 @@ Env files are the one thing edited directly on the server (they're secrets; they
 </table>
 
 <!-- ================= 18. TROUBLESHOOTING ================= -->
-<h2 id="s18">18. When something breaks</h2>
+<div class="kicker" id="s18">Section 18</div>
+<h2>When something breaks</h2>
 <p>19 typical problems. Open your card: symptom → likely cause → fix → check command.</p>
 
 <details><summary>SSH: password rejected / key doesn't work</summary><div class="body">
@@ -1273,7 +1294,8 @@ claude</div>
 </div></details>
 
 <!-- ================= 19. FINAL CHECKLIST ================= -->
-<h2 id="s19">19. Final checklist</h2>
+<div class="kicker" id="s19">Section 19</div>
+<h2>Final checklist</h2>
 <p>Go top to bottom. All boxes ticked — the system is ready for real work.</p>
 <ul class="check">
   <li>VPS running (Ubuntu 22.04/24.04, ideally 2 GB RAM)</li>
@@ -1299,7 +1321,8 @@ claude</div>
 </ul>
 
 <!-- ================= 20. PUBLIC TEMPLATE ================= -->
-<h2 id="s20">20. The repo as a template: build your own system</h2>
+<div class="kicker" id="s20">Section 20</div>
+<h2>The repo as a template: build your own system</h2>
 
 <p>Wayan Agents is an open template — a reusable framework anyone can take as the foundation of
 their own agent system:</p>
@@ -1316,7 +1339,8 @@ their own agent system:</p>
 </ol>
 
 <!-- ================= 21. FOOTER ================= -->
-<h2 id="s21" style="border:none;margin-bottom:0">21. Wrap-up</h2>
+<div class="kicker" id="s21">Section 21</div>
+<h2 style="border:none;margin-bottom:0">Wrap-up</h2>
 <div class="ok-card"><b>You made it to the end.</b> You now have not just a working system,
 but an understanding of <i>why</i> it's built this way: Git as truth, Markdown as memory,
 a human as the reviewer, a minimum of open ports. Happy hunting. NFA.</div>
